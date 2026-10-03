@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- Google Assistant app actions: "play <song/album/artist> on Navic".
+	     The fallback VIEW intent is required, Google rejects shortcuts.xml without one. -->
+	<capability android:name="actions.intent.PLAY_MEDIA">
+		<intent>
+			<url-template android:value="navic://play{?mediaName,artistName,albumName}" />
+			<parameter android:name="media.name" android:key="mediaName" />
+			<parameter android:name="media.byArtist.name" android:key="artistName" />
+			<parameter android:name="media.inAlbum.name" android:key="albumName" />
+		</intent>
+		<intent>
+			<action android:name="android.intent.action.VIEW" />
+			<data android:scheme="navic" android:host="play" />
+		</intent>
+	</capability>
+</shortcuts>

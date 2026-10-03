@@ -53,7 +53,18 @@
 		<activity
 			android:name=".MainActivity"
 			android:exported="true"
-			android:theme="@style/Theme.Navic" />
+			android:launchMode="singleTop"
+			android:theme="@style/Theme.Navic">
+			<!-- Google Assistant app actions deep link (see res/xml/shortcuts.xml) -->
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
+				<data
+					android:scheme="navic"
+					android:host="play" />
+			</intent-filter>
+		</activity>
 
 		<!-- app icon activities -->
 		<activity-alias
@@ -158,5 +169,15 @@
 		<meta-data
 			android:name="androidx.car.app.TintableAttributionIcon"
 			android:resource="@drawable/ic_navic" />
+
+		<!-- Chromecast options (default media receiver) -->
+		<meta-data
+			android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+			android:value="paige.navic.exoplayer.cast.NavicCastOptionsProvider" />
+
+		<!-- Google Assistant app actions -->
+		<meta-data
+			android:name="android.app.shortcuts"
+			android:resource="@xml/shortcuts" />
 	</application>
 </manifest>
