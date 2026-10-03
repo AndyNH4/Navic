@@ -30,6 +30,7 @@ class LoginManager(
 		field = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
 
 	val instanceState = TextFieldState()
+	val backupInstanceState = TextFieldState()
 	val usernameState = TextFieldState()
 	val passwordState = TextFieldState()
 
@@ -97,10 +98,18 @@ class LoginManager(
 					"https://$rawUrl"
 				}
 
+				val rawBackupUrl = backupInstanceState.text.toString().trim().removeSuffix("/")
+				val backupUrl = when {
+					rawBackupUrl.isBlank() -> null
+					rawBackupUrl.startsWith("https://") || rawBackupUrl.startsWith("http://") -> rawBackupUrl
+					else -> "https://$rawBackupUrl"
+				}
+
 				sessionManager.login(
 					url,
 					usernameState.text.toString(),
-					passwordState.text.toString()
+					passwordState.text.toString(),
+					backupUrl
 				)
 
 				repository.syncEverything { progress, message ->

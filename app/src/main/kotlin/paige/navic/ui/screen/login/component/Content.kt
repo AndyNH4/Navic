@@ -68,6 +68,7 @@ fun LoginScreenContent(innerPadding: PaddingValues) {
 	val loginState by viewModel.loginState.collectAsStateWithLifecycle()
 
 	val instanceState = viewModel.instanceState
+	val backupInstanceState = viewModel.backupInstanceState
 	val usernameState = viewModel.usernameState
 	val passwordState = viewModel.passwordState
 
@@ -165,6 +166,7 @@ fun LoginScreenContent(innerPadding: PaddingValues) {
 					instanceError = viewModel.instanceError,
 					instanceFocusRequester = instanceFocusRequester,
 					onInstanceFocusChanged = { viewModel.validateInstance() },
+					backupInstanceState = backupInstanceState,
 					usernameState = usernameState,
 					usernameError = viewModel.usernameError,
 					usernameFocusRequester = usernameFocusRequester,

@@ -16,14 +16,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import paige.navic.domain.model.settings.OfflineMode
 import android.net.ConnectivityManager as AndroidConnectivityManager
 
@@ -47,7 +51,8 @@ private data class NetworkStatus(
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectivityManager(
 	context: Context,
-	private val preferenceManager: PreferenceManager
+	private val preferenceManager: PreferenceManager,
+	private val sessionManager: SessionManager
 ) {
 	private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 	private val dispatcher = Dispatchers.IO
@@ -87,20 +92,78 @@ class ConnectivityManager(
 		.conflate()
 		.stateIn(scope, started, NetworkStatus())
 
+	// Server reachability: consecutive ping failures flip this to false so the
+	// app falls back to offline mode; a single success restores it immediately.
+	private val serverReachable = MutableStateFlow(true)
+	private var consecutivePingFailures = 0
+
+	init {
+		scope.launch {
+			// Re-check whenever the network comes up or changes transport.
+			networkStatus.collect { status ->
+				if (status.isOnline) {
+					checkServerReachability()
+				} else {
+					serverReachable.value = false
+					consecutivePingFailures = 0
+				}
+			}
+		}
+		scope.launch {
+			// While unreachable, keep probing so the app recovers automatically.
+			while (true) {
+				delay(60_000)
+				if (!serverReachable.value &&
+					preferenceManager.offlineMode != OfflineMode.Forced
+				) {
+					checkServerReachability()
+				}
+			}
+		}
+	}
+
+	suspend fun checkServerReachability(): Boolean {
+		if (sessionManager.isLoggedIn.value.not()) return true.also { serverReachable.value = true }
+
+		suspend fun ping(): Boolean = try {
+			withTimeout(5000) { sessionManager.api.ping() }
+			true
+		} catch (_: Exception) {
+			false
+		}
+
+		var reachable = ping()
+		if (!reachable) {
+			// May switch to the configured backup URL and rebuild the client.
+			sessionManager.checkAndFailover()
+			reachable = ping()
+		}
+
+		if (reachable) {
+			consecutivePingFailures = 0
+			serverReachable.value = true
+		} else {
+			consecutivePingFailures++
+			if (consecutivePingFailures >= 2) {
+				serverReachable.value = false
+			}
+		}
+		return serverReachable.value
+	}
+
 	val isCellular = networkStatus
 		.map { it.isCellular }
 		.distinctUntilChanged()
 		.flowOn(dispatcher)
 		.stateIn(scope, started, false)
 
-	val isOnline = networkStatus
-		.mapLatest { status ->
-			when (preferenceManager.offlineMode) {
-				OfflineMode.Forced -> false
-				OfflineMode.NoWiFi -> status.isOnline && !status.isCellular
-				else -> status.isOnline
-			}
+	val isOnline = combine(networkStatus, serverReachable) { status, reachable ->
+		when (preferenceManager.offlineMode) {
+			OfflineMode.Forced -> false
+			OfflineMode.NoWiFi -> status.isOnline && !status.isCellular && reachable
+			else -> status.isOnline && reachable
 		}
+	}
 		.distinctUntilChanged()
 		.flowOn(dispatcher)
 		.stateIn(scope, started, true)

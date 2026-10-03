@@ -21,16 +21,20 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import paige.navic.R
 import paige.navic.di.LocalNavStack
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SessionManager
+import paige.navic.domain.manager.SnackBarManager
 import paige.navic.ui.component.common.SegmentedListItemDefaults
 import paige.navic.ui.component.layout.NestedTopBar
 import paige.navic.ui.navigation.Screen
@@ -46,6 +50,37 @@ fun SettingsConnectionOptionsScreen() {
 
 	val sessionManager = koinInject<SessionManager>()
 	val preferenceManager = koinInject<PreferenceManager>()
+	val snackBarManager = koinInject<SnackBarManager>()
+	val scope = rememberCoroutineScope()
+
+	val isLoggedIn by sessionManager.isLoggedIn.collectAsStateWithLifecycle()
+	val activeInstanceUrl by sessionManager.activeInstanceUrl.collectAsStateWithLifecycle()
+	val isUsingBackupUrl by sessionManager.isUsingBackupUrl.collectAsStateWithLifecycle()
+
+	var primaryUrlField by mutableStateOf(sessionManager.primaryUrl())
+	val primaryUrlHasErrors by derivedStateOf {
+		primaryUrlField.isBlank() ||
+			(!primaryUrlField.startsWith("https://") && !primaryUrlField.startsWith("http://"))
+	}
+	val updatePrimaryUrl: (String) -> Unit = { url ->
+		primaryUrlField = url
+		if (!primaryUrlHasErrors) {
+			sessionManager.setPrimaryUrl(url.trim().removeSuffix("/"))
+		}
+	}
+
+	var backupUrlField by mutableStateOf(sessionManager.backupUrl())
+	val backupUrlHasErrors by derivedStateOf {
+		backupUrlField.isNotBlank() &&
+			!backupUrlField.startsWith("https://") &&
+			!backupUrlField.startsWith("http://")
+	}
+	val updateBackupUrl: (String) -> Unit = { url ->
+		backupUrlField = url
+		if (url.isBlank() || !backupUrlHasErrors) {
+			sessionManager.setBackupUrl(url.trim().removeSuffix("/"))
+		}
+	}
 
 	var proxyUrlField by mutableStateOf(preferenceManager.proxyUrl)
 	val proxyUrlHasErrors by derivedStateOf {
@@ -60,6 +95,19 @@ fun SettingsConnectionOptionsScreen() {
 		if (PROXY_URL_REGEX.matches(proxyUrlField)) {
 			preferenceManager.proxyUrl = url
 			sessionManager.refreshClient()
+		}
+	}
+
+	var audioMuseUrlField by mutableStateOf(preferenceManager.audioMuseUrl)
+	val audioMuseUrlHasErrors by derivedStateOf {
+		audioMuseUrlField.isNotBlank() &&
+			!audioMuseUrlField.startsWith("https://") &&
+			!audioMuseUrlField.startsWith("http://")
+	}
+	val updateAudioMuseUrl: (String) -> Unit = { url ->
+		audioMuseUrlField = url
+		if (url.isBlank() || !audioMuseUrlHasErrors) {
+			preferenceManager.audioMuseUrl = url.trim().removeSuffix("/")
 		}
 	}
 
@@ -83,6 +131,68 @@ fun SettingsConnectionOptionsScreen() {
 					.padding(horizontal = 16.dp),
 				verticalArrangement = Arrangement.spacedBy(SettingsGroupDefaults.GapBetweenGroups)
 			) {
+				if (isLoggedIn) {
+					SettingsGroup {
+						OutlinedTextField(
+							modifier = Modifier.fillMaxWidth(),
+							singleLine = true,
+							value = primaryUrlField,
+							onValueChange = updatePrimaryUrl,
+							isError = primaryUrlHasErrors,
+							label = { Text(stringResource(R.string.option_account_instance)) },
+							supportingText = {
+								if (primaryUrlHasErrors) {
+									Text(stringResource(R.string.info_incorrect_backup_url_format))
+								}
+							}
+						)
+					}
+					SettingsGroup {
+						OutlinedTextField(
+							modifier = Modifier.fillMaxWidth(),
+							singleLine = true,
+							value = backupUrlField,
+							onValueChange = updateBackupUrl,
+							isError = backupUrlHasErrors,
+							label = { Text(stringResource(R.string.option_backup_server)) },
+							supportingText = {
+								if (backupUrlHasErrors) {
+									Text(stringResource(R.string.info_incorrect_backup_url_format))
+								} else {
+									Text(stringResource(R.string.info_backup_instance_description))
+								}
+							}
+						)
+					}
+					if (backupUrlField.isNotBlank()) {
+						SettingsGroup {
+							SettingsNavItem(
+								content = {
+									Text(
+										stringResource(
+											if (isUsingBackupUrl) R.string.action_switch_to_primary
+											else R.string.action_switch_to_backup
+										)
+									)
+								},
+								supportingContent = {
+									Text(stringResource(R.string.info_active_server, activeInstanceUrl))
+								},
+								shapes = SegmentedListItemDefaults.segmentedShapes(
+									index = 0,
+									count = 1
+								),
+								onClick = dropUnlessResumed {
+									scope.launch {
+										if (!sessionManager.switchToOtherUrl()) {
+											snackBarManager.notify(R.string.notice_server_unreachable)
+										}
+									}
+								}
+							)
+						}
+					}
+				}
 				SettingsGroup {
 					OutlinedTextField(
 						modifier = Modifier.fillMaxWidth(),
@@ -95,6 +205,24 @@ fun SettingsConnectionOptionsScreen() {
 						supportingText = {
 							if (proxyUrlHasErrors) {
 								Text(stringResource(R.string.info_incorrect_proxy_url_format))
+							}
+						}
+					)
+				}
+				SettingsGroup {
+					OutlinedTextField(
+						modifier = Modifier.fillMaxWidth(),
+						singleLine = true,
+						value = audioMuseUrlField,
+						onValueChange = updateAudioMuseUrl,
+						isError = audioMuseUrlHasErrors,
+						label = { Text(stringResource(R.string.option_audiomuse_url)) },
+						placeholder = { Text(stringResource(R.string.info_audiomuse_url_placeholder)) },
+						supportingText = {
+							if (audioMuseUrlHasErrors) {
+								Text(stringResource(R.string.info_incorrect_backup_url_format))
+							} else {
+								Text(stringResource(R.string.info_audiomuse_url_description))
 							}
 						}
 					)

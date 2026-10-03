@@ -41,6 +41,7 @@ fun LoginScreenFields(
 	instanceError: Boolean,
 	instanceFocusRequester: FocusRequester,
 	onInstanceFocusChanged: () -> Unit,
+	backupInstanceState: TextFieldState,
 	usernameState: TextFieldState,
 	usernameError: Boolean,
 	usernameFocusRequester: FocusRequester,
@@ -81,6 +82,27 @@ fun LoginScreenFields(
 	)
 
 	LoginScreenSuggestionChips(instanceState = instanceState)
+
+	OutlinedTextField(
+		modifier = Modifier
+			.heightIn(min = 60.dp)
+			.padding(horizontal = 16.dp)
+			.fillMaxWidth(),
+		state = backupInstanceState,
+		label = { Text(stringResource(R.string.option_account_backup_instance)) },
+		supportingText = { Text(stringResource(R.string.info_backup_instance_description)) },
+		lineLimits = TextFieldLineLimits.SingleLine,
+		enabled = !isBusy,
+		keyboardOptions = KeyboardOptions(
+			autoCorrectEnabled = false,
+			keyboardType = KeyboardType.Uri,
+			imeAction = ImeAction.Next,
+			showKeyboardOnFocus = true
+		),
+		onKeyboardAction = KeyboardActionHandler {
+			usernameFocusRequester.requestFocus()
+		}
+	)
 
 	var usernameWasFocused by remember { mutableStateOf(false) }
 	OutlinedTextField(
