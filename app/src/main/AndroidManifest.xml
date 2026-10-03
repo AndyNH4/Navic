@@ -61,7 +61,7 @@
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
 				<data
-					android:scheme="navic"
+					android:scheme="rezeener"
 					android:host="play" />
 			</intent-filter>
 		</activity>

@@ -37,7 +37,7 @@ sealed interface VoicePlayResolution {
 }
 
 /**
- * Receives Google Assistant app action deep links (navic://play, declared in
+ * Receives Google Assistant app action deep links (rezeener://play, declared in
  * res/xml/shortcuts.xml for actions.intent.PLAY_MEDIA) and turns them into a
  * playback decision. Matching is deliberately conservative: only an exact,
  * unambiguous match plays anything, everything else lands on the search
@@ -168,7 +168,7 @@ class VoiceActionManager(
 			|| artists.any { it.name.equals(name, ignoreCase = true) }
 
 	companion object {
-		private const val SCHEME = "navic"
+		private const val SCHEME = "rezeener"
 		private const val HOST = "play"
 	}
 }

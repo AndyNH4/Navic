@@ -111,11 +111,11 @@ android {
 	}
 
 	defaultConfig {
-		applicationId = "paige.navic"
+		applicationId = "com.andy.rezeener"
 		minSdk = libs.versions.android.minSdk.get().toInt()
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
-		versionCode = 59
-		versionName = "v1.0.0-alpha59"
+		versionCode = 1
+		versionName = "1.0.0"
 		multiDexEnabled = true
 
 		ndk {
@@ -126,12 +126,30 @@ android {
 		}
 	}
 
+	// release signing: local keystore.properties (gitignored) first, env vars as fallback
+	val keystorePropertiesFile = rootProject.file("keystore.properties")
+	val keystoreProperties: Map<String, String> =
+		if (keystorePropertiesFile.exists()) {
+			keystorePropertiesFile.readLines().mapNotNull { line ->
+				val trimmed = line.trim()
+				if (trimmed.isEmpty() || trimmed.startsWith("#")) return@mapNotNull null
+				val separator = trimmed.indexOf('=')
+				if (separator <= 0) return@mapNotNull null
+				trimmed.substring(0, separator).trim() to trimmed.substring(separator + 1).trim()
+			}.toMap()
+		} else {
+			emptyMap()
+		}
+	fun keystoreOrEnv(key: String, env: String): String? =
+		keystoreProperties[key] ?: System.getenv(env)
+
 	signingConfigs {
 		create("release") {
-			keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-			keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-			storeFile = System.getenv("SIGNING_STORE_FILE")?.let(::File)
-			storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+			keyAlias = keystoreOrEnv("keyAlias", "SIGNING_KEY_ALIAS")
+			keyPassword = keystoreOrEnv("keyPassword", "SIGNING_KEY_PASSWORD")
+			storeFile = keystoreOrEnv("storeFile", "SIGNING_STORE_FILE")
+				?.let { rootProject.file(it) }
+			storePassword = keystoreOrEnv("storePassword", "SIGNING_STORE_PASSWORD")
 		}
 	}
 
@@ -151,7 +169,7 @@ android {
 
 		getByName("debug") {
 			applicationIdSuffix = ".debug"
-			resValue("string", "app_name", "Navic (Dev)")
+			resValue("string", "app_name", "Rezeener (Dev)")
 		}
 	}
 

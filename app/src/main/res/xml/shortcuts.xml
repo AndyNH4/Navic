@@ -4,7 +4,7 @@
 	     The fallback VIEW intent is required, Google rejects shortcuts.xml without one. -->
 	<capability android:name="actions.intent.PLAY_MEDIA">
 		<intent>
-			<url-template android:value="navic://play{?mediaName,artistName,albumName}" />
+			<url-template android:value="rezeener://play{?mediaName,artistName,albumName}" />
 			<parameter android:name="media.name" android:key="mediaName" />
 			<parameter android:name="media.byArtist.name" android:key="artistName" />
 			<parameter android:name="media.inAlbum.name" android:key="albumName" />
