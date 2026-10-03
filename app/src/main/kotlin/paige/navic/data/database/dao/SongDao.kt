@@ -10,11 +10,29 @@ import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.RawQuery
+import androidx.room3.RoomRawQuery
 import androidx.room3.Transaction
 import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import paige.navic.data.database.entity.SongEntity
 import paige.navic.util.Logger
+
+data class GenrePlayCount(
+	val genre: String,
+	val playCount: Int
+)
+
+data class YearPlayCount(
+	val year: Int,
+	val playCount: Int
+)
+
+data class ArtistPlayCount(
+	val artistId: String,
+	val artistName: String?,
+	val playCount: Int
+)
 
 @Dao
 interface SongDao {
@@ -85,8 +103,59 @@ interface SongDao {
 	@Query("SELECT * FROM SongEntity ORDER BY RANDOM() LIMIT :count")
 	suspend fun getRandomSongs(count: Int): List<SongEntity>
 
-	@Query("SELECT * FROM SongEntity WHERE title LIKE '%' || :query || '%' COLLATE NOCASE")
-	suspend fun searchSongsList(query: String): List<SongEntity>
+	@Query("SELECT * FROM SongEntity WHERE starredAt IS NOT NULL ORDER BY RANDOM() LIMIT 1")
+	suspend fun getRandomStarredSong(): SongEntity?
+
+	@Query(
+		"""
+		SELECT * FROM SongEntity
+		WHERE genre = :genre OR ('||' || genres || '||') LIKE '%||' || :genre || '||%'
+		ORDER BY RANDOM() LIMIT :count
+		"""
+	)
+	suspend fun getRandomSongsByGenre(genre: String, count: Int): List<SongEntity>
+
+	@Query(
+		"""
+		SELECT * FROM SongEntity
+		WHERE year IS NOT NULL AND year >= :fromYear AND year <= :toYear
+		ORDER BY RANDOM() LIMIT :count
+		"""
+	)
+	suspend fun getRandomSongsByYearRange(fromYear: Int, toYear: Int, count: Int): List<SongEntity>
+
+	@Query(
+		"""
+		SELECT genre, SUM(playCount) AS playCount FROM SongEntity
+		WHERE playCount > 0 AND genre IS NOT NULL AND genre != ''
+		GROUP BY genre ORDER BY playCount DESC LIMIT :limit
+		"""
+	)
+	suspend fun getTopGenresByPlayCount(limit: Int): List<GenrePlayCount>
+
+	@Query(
+		"""
+		SELECT year, SUM(playCount) AS playCount FROM SongEntity
+		WHERE playCount > 0 AND year IS NOT NULL AND year >= 1950
+		GROUP BY year
+		"""
+	)
+	suspend fun getPlayCountsByYear(): List<YearPlayCount>
+
+	@Query(
+		"""
+		SELECT artistId, MAX(artistName) AS artistName, SUM(playCount) AS playCount FROM SongEntity
+		WHERE playCount > 0 AND artistId != 'unknown artist'
+		GROUP BY artistId ORDER BY playCount DESC LIMIT :limit
+		"""
+	)
+	suspend fun getTopArtistsByPlayCount(limit: Int): List<ArtistPlayCount>
+
+	@Query("SELECT coverArtId FROM SongEntity WHERE artistId = :artistId AND coverArtId IS NOT NULL LIMIT 1")
+	suspend fun getCoverArtForArtist(artistId: String): String?
+
+	@RawQuery
+	suspend fun searchSongsFuzzy(query: RoomRawQuery): List<SongEntity>
 
 	@Query("SELECT * FROM SongEntity WHERE artistId = :artistId")
 	suspend fun getSongsByArtistId(artistId: String): List<SongEntity>

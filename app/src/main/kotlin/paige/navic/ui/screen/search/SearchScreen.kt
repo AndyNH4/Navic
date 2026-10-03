@@ -14,6 +14,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -58,6 +60,7 @@ import paige.navic.di.LocalBottomBarScrollManager
 import paige.navic.di.LocalNavStack
 import paige.navic.di.LocalSizeClass
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.model.DomainAlbum
 import paige.navic.domain.model.DomainAlbumListType
 import paige.navic.domain.model.DomainArtist
@@ -110,7 +113,8 @@ enum class SearchCategory(@StringRes val res: Int) {
 // TODO: clean this up, holy shit
 @Composable
 fun SearchScreen(
-	nested: Boolean
+	nested: Boolean,
+	initialQuery: String? = null
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 
@@ -146,6 +150,7 @@ fun SearchScreen(
 	val downloadedSongs by viewModel.downloadedSongs.collectAsState()
 
 	val player = koinInject<MediaPlayerViewModel>()
+	val snackBarManager = koinInject<SnackBarManager>()
 	val backStack = LocalNavStack.current
 
 	var selectedCategory by remember { mutableStateOf(SearchCategory.ALL) }
@@ -157,6 +162,14 @@ fun SearchScreen(
 			if (event is RootViewModel.Event.ScrollToTop) {
 				viewModel.gridState.animateScrollToItem(0)
 			}
+		}
+	}
+
+	// e.g. a voice action landing here with a prefilled query
+	LaunchedEffect(initialQuery) {
+		if (!initialQuery.isNullOrBlank()) {
+			query.clearText()
+			query.edit { insert(0, initialQuery) }
 		}
 	}
 
@@ -229,6 +242,30 @@ fun SearchScreen(
 						verticalArrangement = Arrangement.spacedBy(8.dp)
 					) {
 						if (query.text.isNotBlank()) {
+							if (!isOnline) {
+								item(span = { GridItemSpan(maxLineSpan) }) {
+									Row(
+										verticalAlignment = Alignment.CenterVertically,
+										modifier = Modifier.padding(
+											horizontal = 16.dp,
+											vertical = 4.dp
+										)
+									) {
+										Icon(
+											Icons.Outlined.Offline,
+											contentDescription = null,
+											modifier = Modifier.size(16.dp),
+											tint = MaterialTheme.colorScheme.onSurfaceVariant
+										)
+										Spacer(Modifier.width(8.dp))
+										Text(
+											stringResource(R.string.info_offline_search_results),
+											style = MaterialTheme.typography.labelLarge,
+											color = MaterialTheme.colorScheme.onSurfaceVariant
+										)
+									}
+								}
+							}
 							if (songs.isNotEmpty()) {
 								item(span = { GridItemSpan(maxLineSpan) }) {
 									Text(
@@ -301,7 +338,11 @@ fun SearchScreen(
 											modifier = Modifier
 												.background(MaterialTheme.colorScheme.surface),
 											onClick = {
-												player.playNow(song)
+												if (maybeUnavailable) {
+													snackBarManager.notify(R.string.info_not_available_offline)
+												} else {
+													player.playNow(song)
+												}
 											},
 											onLongClick = { viewModel.selectSong(song) },
 											verticalAlignment = Alignment.CenterVertically,
