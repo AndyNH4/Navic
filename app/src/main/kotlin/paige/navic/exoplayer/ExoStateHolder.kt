@@ -16,6 +16,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.ktor.KtorDataSource
@@ -54,6 +55,8 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.exoplayer.impl.ExoArtworkLoader
+import paige.navic.exoplayer.impl.CrossfadeEngine
+import paige.navic.exoplayer.impl.CrossfadeForwardingPlayer
 import paige.navic.exoplayer.impl.ExoAudioGainProcessor
 import paige.navic.util.createHttpClientWithPreferences
 
@@ -66,14 +69,29 @@ class ExoStateHolder: KoinComponent {
 
 	private var isInitialized = false
 
+	val isReady: Boolean
+		get() = isInitialized
+
 	// ExoPlaybackService and AudioGainManager depends on these fields below
-	lateinit var playerInstance: ExoPlayer
+	// playerInstance is the MediaSession-stable wrapper around the engine's
+	// leading leg; all Player-interface consumers use it transparently
+	lateinit var playerInstance: Player
 	lateinit var mediaSession: MediaSession
+	private lateinit var sessionWrapper: CrossfadeForwardingPlayer
+	private lateinit var crossfadeEngine: CrossfadeEngine
 
+	// one gain processor per engine leg: a single AudioProcessor instance
+	// cannot feed two AudioSinks concurrently
 	val gainProcessor = ExoAudioGainProcessor()
+	val gainProcessorB = ExoAudioGainProcessor()
+
+	private val audioAttributes = AudioAttributes.Builder()
+		.setUsage(C.USAGE_MEDIA)
+		.setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+		.build()
 
 
-	private class MediaSessionCallback(private val player: ExoPlayer) : MediaSession.Callback {
+	private class MediaSessionCallback : MediaSession.Callback {
 		override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo
@@ -96,6 +114,9 @@ class ExoStateHolder: KoinComponent {
             customCommand: SessionCommand,
             args: Bundle
 		): ListenableFuture<SessionResult> {
+			// operate on the session's current player: while casting this is the
+			// RemoteCastPlayer, not the local ExoPlayer
+			val player = session.player
 			when (customCommand.customAction) {
 				COMMAND_SHUFFLE -> {
 					player.shuffleModeEnabled = !player.shuffleModeEnabled
@@ -133,26 +154,27 @@ class ExoStateHolder: KoinComponent {
         )
     )
 
-	private fun createRenderers(context: Context): RenderersFactory {
+	private fun createRenderers(context: Context, gainProcessor: ExoAudioGainProcessor): RenderersFactory {
+		val audioProcessors = arrayOf<AudioProcessor>(gainProcessor)
 		return RenderersFactory { handler, _, audioListener, _, _ ->
-            arrayOf<BaseRenderer>(
-                FfmpegAudioRenderer(
-                    context,
-                    handler,
-                    audioListener,
-                    gainProcessor
-                ),
-                MediaCodecAudioRenderer(
-                    context,
-                    MediaCodecSelector.DEFAULT,
-                    handler,
-                    audioListener,
-                    DefaultAudioSink.Builder(context)
-                        .setAudioProcessors(arrayOf(gainProcessor))
-                        .build()
-                )
-            )
-        }
+			arrayOf<BaseRenderer>(
+				FfmpegAudioRenderer(
+					context,
+					handler,
+					audioListener,
+					*audioProcessors
+				),
+				MediaCodecAudioRenderer(
+					context,
+					MediaCodecSelector.DEFAULT,
+					handler,
+					audioListener,
+					DefaultAudioSink.Builder(context)
+						.setAudioProcessors(audioProcessors)
+						.build()
+				)
+			)
+		}
 	}
 
 	private fun makeButtons(player: Player) = buildList {
@@ -183,7 +205,8 @@ class ExoStateHolder: KoinComponent {
 		)
 	}
 
-	private val loadControl: LoadControl = DefaultLoadControl.Builder().apply {
+	// per-leg factory: a LoadControl instance must not be shared between players
+	private fun createLoadControl(): LoadControl = DefaultLoadControl.Builder().apply {
 		setBufferDurationsMs(
 			/* minBufferMs = */ 32_000,
 			/* maxBufferMs = */ 64_000,
@@ -193,27 +216,23 @@ class ExoStateHolder: KoinComponent {
 		setBackBuffer(10_000, true)
 	}.build()
 
-	private suspend fun createPlayerInstance(): ExoPlayer = mutex.withLock {
+	private fun createLegPlayer(
+		gainProcessor: ExoAudioGainProcessor,
+		handleAudioFocus: Boolean
+	): ExoPlayer {
 		val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
 		val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
-
-		playerInstance = ExoPlayer.Builder(
+		return ExoPlayer.Builder(
 			context,
-			createRenderers(context)
+			createRenderers(context, gainProcessor)
 		).apply {
-			setLoadControl(loadControl)
+			setLoadControl(createLoadControl())
 			setMediaSourceFactory(mediaSourceFactory)
 			setHandleAudioBecomingNoisy(true)
 			setWakeMode(C.WAKE_MODE_NETWORK)
 		}.build()
 			.apply {
-				setAudioAttributes(
-					AudioAttributes.Builder()
-						.setUsage(C.USAGE_MEDIA)
-						.setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-						.build(),
-					true
-				)
+				setAudioAttributes(audioAttributes, handleAudioFocus)
 
 				trackSelectionParameters =
 					trackSelectionParameters.buildUpon().setAudioOffloadPreferences(
@@ -230,17 +249,29 @@ class ExoStateHolder: KoinComponent {
 							.build()
 					).build()
 			}
-			.also {
-				it.addListener(object : Player.Listener {
-					override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-						mediaSession.setCustomLayout(makeButtons(it))
-					}
+	}
 
-					override fun onRepeatModeChanged(repeatMode: Int) {
-						mediaSession.setCustomLayout(makeButtons(it))
-					}
-				})
+	private suspend fun createPlayerInstance(): Player = mutex.withLock {
+		val leadingLeg = createLegPlayer(gainProcessor, handleAudioFocus = true)
+		sessionWrapper = CrossfadeForwardingPlayer(leadingLeg)
+		playerInstance = sessionWrapper
+		crossfadeEngine = CrossfadeEngine(
+			preferenceManager = preferenceManager,
+			audioAttributes = audioAttributes,
+			legA = leadingLeg,
+			standbyLegFactory = { createLegPlayer(gainProcessorB, handleAudioFocus = false) },
+			wrapper = sessionWrapper
+		).apply { start() }
+
+		sessionWrapper.addListener(object : Player.Listener {
+			override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+				refreshSessionButtons()
 			}
+
+			override fun onRepeatModeChanged(repeatMode: Int) {
+				refreshSessionButtons()
+			}
+		})
 
 		return playerInstance
 	}
@@ -269,7 +300,7 @@ class ExoStateHolder: KoinComponent {
 			mediaSession = MediaSession.Builder(context, it)
 				.setSessionActivity(sessionPendingIntent)
 				.setBitmapLoader(bitmapLoader)
-				.setCallback(MediaSessionCallback(it))
+				.setCallback(MediaSessionCallback())
 				.setCustomLayout(makeButtons(it))
 				.build()
 		}
@@ -288,14 +319,35 @@ class ExoStateHolder: KoinComponent {
         isInitialized = !isInitialized
     }
 
+	/** Called from settings when crossfade preferences change; safe before initState(). */
+	fun onCrossfadeSettingsChanged() {
+		if (!isInitialized) return
+		crossfadeEngine.onSettingsChanged()
+	}
+
+	/**
+	 * Rebuilds the notification's shuffle/repeat buttons from the session's
+	 * current player, which is the RemoteCastPlayer while casting.
+	 */
+	fun refreshSessionButtons() {
+		if (!isInitialized) return
+		mediaSession.setCustomLayout(makeButtons(mediaSession.player))
+	}
+
 	fun destroySession() {
 		if (!isInitialized) return
 
 		mediaSession.let {
-			it.player.stop()
-			it.player.release()
+			// a remote (cast) player may be attached; detach it so the local
+			// wrapper (and through it the engine's legs) is released below
+			if (it.player !== playerInstance) {
+				runCatching { it.setPlayer(playerInstance) }
+			}
 			it.release()
 		}
+		// stops the fade machinery and releases both legs
+		crossfadeEngine.release()
+		playerInstance.release()
 		isInitialized = !isInitialized
 	}
 

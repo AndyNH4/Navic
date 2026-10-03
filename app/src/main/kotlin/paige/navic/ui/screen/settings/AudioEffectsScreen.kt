@@ -33,6 +33,7 @@ import paige.navic.di.LocalNavStack
 import paige.navic.domain.manager.AudioGainManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.model.settings.ReplayGainMode
+import paige.navic.exoplayer.ExoStateHolder
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Info
 import paige.navic.ui.component.common.SegmentedListItem
@@ -51,6 +52,7 @@ import kotlin.math.round
 fun AudioEffectsScreen() {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val audioGainManager = koinInject<AudioGainManager>()
+	val exoStateHolder = koinInject<ExoStateHolder>()
 	val backStack = LocalNavStack.current
 
 	Scaffold(
@@ -71,6 +73,7 @@ fun AudioEffectsScreen() {
 				verticalArrangement = Arrangement.spacedBy(SettingsGroupDefaults.GapBetweenGroups)
 			) {
 				SettingsGroup(title = { Text(stringResource(R.string.title_playback)) }) {
+					val playbackItemCount = if (preferenceManager.crossfadeEnabled) 5 else 4
 					SettingsNavItem(
 						onClick = dropUnlessResumed { backStack.add(Screen.Settings.Equalizer) },
 						content = { Text(stringResource(R.string.option_equalizer)) },
@@ -84,21 +87,44 @@ fun AudioEffectsScreen() {
 								)
 							)
 						},
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 3)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = playbackItemCount)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.gaplessPlayback,
 						onCheckedChange = { preferenceManager.gaplessPlayback = it },
 						content = { Text(stringResource(R.string.option_gapless_playback)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_gapless_playback)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 3)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = playbackItemCount)
 					)
+					SettingsToggleItem(
+						checked = preferenceManager.crossfadeEnabled,
+						onCheckedChange = {
+							preferenceManager.crossfadeEnabled = it
+							exoStateHolder.onCrossfadeSettingsChanged()
+						},
+						content = { Text(stringResource(R.string.option_crossfade)) },
+						supportingContent = { Text(stringResource(R.string.subtitle_crossfade)) },
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = playbackItemCount)
+					)
+					if (preferenceManager.crossfadeEnabled) {
+						SettingsSliderItem(
+							content = { Text(stringResource(R.string.info_crossfade_duration)) },
+							trailingContent = { Text("${preferenceManager.crossfadeDurationSeconds.round(1)}s") },
+							value = preferenceManager.crossfadeDurationSeconds,
+							valueRange = 1f..12f,
+							steps = 10,
+							onValueChange = {
+								preferenceManager.crossfadeDurationSeconds = it.round(1)
+							},
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = playbackItemCount)
+						)
+					}
 					SettingsToggleItem(
 						checked = preferenceManager.audioOffload,
 						onCheckedChange = { preferenceManager.audioOffload = it },
 						content = { Text(stringResource(R.string.option_audio_offload)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_audio_offload)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 3)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = playbackItemCount - 1, count = playbackItemCount)
 					)
 				}
 

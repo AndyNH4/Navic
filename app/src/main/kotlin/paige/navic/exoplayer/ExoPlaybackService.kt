@@ -7,7 +7,6 @@
 package paige.navic.exoplayer
 
 import android.content.Intent
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
@@ -22,9 +21,11 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import paige.navic.R
 import paige.navic.domain.manager.AndroidScrobbleManager
+import paige.navic.domain.manager.CastManager
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.EqualizerManager
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.PlayHistoryManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.SyncManager
 import paige.navic.exoplayer.impl.ExoEqualizerManager
@@ -39,10 +40,13 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 
 	private val connectivityManager: ConnectivityManager by inject()
 
+	private val castManager: CastManager by inject()
+
 	private val syncManager: SyncManager by inject()
 	private val sessionManager: SessionManager by inject()
 	private val preferenceManager: PreferenceManager by inject()
 	private val equalizerManager: EqualizerManager by inject()
+	private val playHistoryManager: PlayHistoryManager by inject()
 
 	private lateinit var exoEqualizerManager: ExoEqualizerManager
 
@@ -55,6 +59,8 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
             this
         )
 		stateHolder.initState()
+		// take over an ongoing cast session that started before the service
+		castManager.onPlaybackServiceReady()
 
 		val notificationProvider = DefaultMediaNotificationProvider.Builder(this)
 			.build().apply {
@@ -64,15 +70,14 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 		setMediaNotificationProvider(notificationProvider)
 
 		stateHolder.playerInstance.let { player ->
-			player as Player
-
 			scrobbleManager = AndroidScrobbleManager(
                 player,
                 serviceScope,
                 connectivityManager,
                 syncManager,
                 sessionManager,
-                preferenceManager
+                preferenceManager,
+                playHistoryManager
             )
 
 			player.addListener(exoEqualizerManager)

@@ -73,6 +73,8 @@ class PreferenceManager(
 	var ampGain by preference(0f)
 	var gaplessPlayback by preference(true)
 	var audioOffload by preference(false)
+	var crossfadeEnabled by preference(false)
+	var crossfadeDurationSeconds by preference(6f)
 
 	// TODO: better names and strings for these transcoding settings
 	var streamingQualityWifi by preference(StreamingQuality.Lossless)
@@ -160,4 +162,6 @@ class PreferenceManager(
 
 	var proxyUrl by preference("")
 	var dangerousSslNoopEnabled by preference(false)
+
+	var audioMuseUrl by preference("")
 }

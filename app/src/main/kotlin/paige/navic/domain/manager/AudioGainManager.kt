@@ -12,27 +12,36 @@ import org.koin.core.component.inject
 import paige.navic.domain.model.DomainReplayGain
 import paige.navic.domain.model.settings.ReplayGainMode
 import paige.navic.exoplayer.ExoStateHolder
+import paige.navic.exoplayer.impl.ExoAudioGainProcessor
 
 @UnstableApi
 class AudioGainManager: KoinComponent {
 	private val stateHolder: ExoStateHolder by inject()
 
+	// the crossfade engine runs one gain processor per leg; writes go to both
+	private fun forEachProcessor(block: (ExoAudioGainProcessor) -> Unit) {
+		block(stateHolder.gainProcessor)
+		block(stateHolder.gainProcessorB)
+	}
+
     fun applyGainMode(
         mode: ReplayGainMode
     ) {
-		stateHolder.gainProcessor.applyGainMode(mode)
+		forEachProcessor { it.applyGainMode(mode) }
     }
 
 	fun resetGain() {
-		stateHolder.gainProcessor.resetGain()
-    }
+		forEachProcessor { it.resetGain() }
+	}
 
 	fun setAmplifierValues(withReplayGain: Float, withoutReplayGain: Float) {
-		stateHolder.gainProcessor.rgAmpValue = withReplayGain
-		stateHolder.gainProcessor.ampValue = withoutReplayGain
+		forEachProcessor {
+			it.rgAmpValue = withReplayGain
+			it.ampValue = withoutReplayGain
+		}
 	}
 
 	fun setReplayGainMetadata(metadata: DomainReplayGain?) {
-		stateHolder.gainProcessor.setReplayGainMetadata(metadata)
+		forEachProcessor { it.setReplayGainMetadata(metadata) }
 	}
 }
