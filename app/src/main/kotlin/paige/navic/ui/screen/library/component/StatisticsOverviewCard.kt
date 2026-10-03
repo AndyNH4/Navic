@@ -38,17 +38,23 @@ import androidx.compose.ui.unit.dp
 import com.kyant.capsule.ContinuousCapsule
 import org.koin.compose.koinInject
 import paige.navic.R
+import paige.navic.data.database.dao.AlbumPlayAggregate
+import paige.navic.data.database.dao.SongPlayAggregate
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.ui.component.common.CoverArt
-import paige.navic.ui.screen.stats.viewmodel.StatisticsState
+import paige.navic.ui.screen.stats.viewmodel.ArtistStats
 import paige.navic.ui.util.rememberColorSchemeFromCoverArt
 import paige.navic.util.toSummaryString
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun StatisticsOverviewCard(
-	statsState: StatisticsState,
+	topArtists: List<ArtistStats>,
+	topAlbums: List<AlbumPlayAggregate>,
+	topSongs: List<SongPlayAggregate>,
+	totalListeningTime: Duration,
 	onClick: () -> Unit,
 ) {
 	val pagerState = rememberPagerState { 3 }
@@ -69,9 +75,9 @@ fun StatisticsOverviewCard(
 			pageSpacing = 16.dp
 		) { page ->
 			when (page) {
-				0 -> TopArtistPage(statsState)
-				1 -> TopAlbumPage(statsState)
-				2 -> TopSongPage(statsState)
+				0 -> TopArtistPage(topArtists, totalListeningTime)
+				1 -> TopAlbumPage(topAlbums, totalListeningTime)
+				2 -> TopSongPage(topSongs, totalListeningTime)
 			}
 		}
 
@@ -99,44 +105,44 @@ fun StatisticsOverviewCard(
 }
 
 @Composable
-private fun TopArtistPage(statsState: StatisticsState) {
-	val topArtist = statsState.topArtists.firstOrNull()
+private fun TopArtistPage(topArtists: List<ArtistStats>, totalListeningTime: Duration) {
+	val topArtist = topArtists.firstOrNull()
 	StatPageContent(
 		title = stringResource(R.string.title_statistics),
 		subtitle = stringResource(R.string.title_top_artists),
-		name = topArtist?.artist?.name ?: "No data",
+		name = topArtist?.artist?.name?.ifEmpty { null } ?: "No data",
 		coverArtId = topArtist?.artist?.coverArtId,
 		playCount = topArtist?.playCount ?: 0,
 		duration = topArtist?.listeningTime ?: Duration.ZERO,
-		totalDuration = statsState.totalDuration
+		totalDuration = totalListeningTime
 	)
 }
 
 @Composable
-private fun TopAlbumPage(statsState: StatisticsState) {
-	val topAlbum = statsState.topAlbums.firstOrNull()
+private fun TopAlbumPage(topAlbums: List<AlbumPlayAggregate>, totalListeningTime: Duration) {
+	val topAlbum = topAlbums.firstOrNull()
 	StatPageContent(
 		title = stringResource(R.string.title_statistics),
 		subtitle = stringResource(R.string.title_top_albums),
-		name = topAlbum?.album?.name ?: "No data",
-		coverArtId = topAlbum?.album?.coverArtId,
+		name = topAlbum?.albumTitle ?: "No data",
+		coverArtId = topAlbum?.coverArtId,
 		playCount = topAlbum?.playCount ?: 0,
-		duration = topAlbum?.listeningTime ?: Duration.ZERO,
-		totalDuration = statsState.totalDuration
+		duration = topAlbum?.listeningTimeMs?.milliseconds ?: Duration.ZERO,
+		totalDuration = totalListeningTime
 	)
 }
 
 @Composable
-private fun TopSongPage(statsState: StatisticsState) {
-	val topSong = statsState.topSongs.firstOrNull()
+private fun TopSongPage(topSongs: List<SongPlayAggregate>, totalListeningTime: Duration) {
+	val topSong = topSongs.firstOrNull()
 	StatPageContent(
 		title = stringResource(R.string.title_statistics),
 		subtitle = stringResource(R.string.title_top_songs),
-		name = topSong?.song?.title ?: "No data",
-		coverArtId = topSong?.song?.coverArtId,
+		name = topSong?.songTitle?.ifEmpty { null } ?: "No data",
+		coverArtId = topSong?.coverArtId,
 		playCount = topSong?.playCount ?: 0,
-		duration = topSong?.listeningTime ?: Duration.ZERO,
-		totalDuration = statsState.totalDuration
+		duration = topSong?.listeningTimeMs?.milliseconds ?: Duration.ZERO,
+		totalDuration = totalListeningTime
 	)
 }
 

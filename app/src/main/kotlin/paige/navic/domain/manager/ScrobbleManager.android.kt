@@ -16,7 +16,8 @@ class AndroidScrobbleManager(
 	connectivityManager: ConnectivityManager,
 	syncManager: SyncManager,
 	sessionManager: SessionManager,
-	preferenceManager: PreferenceManager
+	preferenceManager: PreferenceManager,
+	playHistoryManager: PlayHistoryManager
 ) : Player.Listener {
 
 	private val playerSource = object : ScrobblePlayerSource {
@@ -32,7 +33,8 @@ class AndroidScrobbleManager(
 			syncManager,
 			sessionManager,
 			scope,
-			preferenceManager
+			preferenceManager,
+			playHistoryManager
 		)
 
 	init {

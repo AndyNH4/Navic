@@ -28,7 +28,8 @@ class ScrobbleManager(
 	private val syncManager: SyncManager,
 	private val sessionManager: SessionManager,
 	private val scope: CoroutineScope,
-	private val preferenceManager: PreferenceManager
+	private val preferenceManager: PreferenceManager,
+	private val playHistoryManager: PlayHistoryManager
 ) {
 	private var currentMediaId: String? = null
 	private var hasScrobbledCurrent = false
@@ -92,6 +93,7 @@ class ScrobbleManager(
 
 		if (isValidSong && playedEnoughPercent) {
 			scrobbleSubmission(currentMediaId)
+			currentMediaId?.let { playHistoryManager.recordPlay(it) }
 			hasScrobbledCurrent = true
 		}
 	}
