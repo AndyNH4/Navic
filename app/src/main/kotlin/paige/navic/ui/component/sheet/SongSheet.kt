@@ -54,11 +54,13 @@ import paige.navic.icons.filled.Star
 import paige.navic.icons.outlined.Album
 import paige.navic.icons.outlined.Artist
 import paige.navic.icons.outlined.Bedtime
+import paige.navic.icons.outlined.Bookmark
 import paige.navic.icons.outlined.Close
 import paige.navic.icons.outlined.Delete
 import paige.navic.icons.outlined.Download
 import paige.navic.icons.outlined.DownloadOff
 import paige.navic.icons.outlined.Info
+import paige.navic.icons.outlined.LibraryMusic
 import paige.navic.icons.outlined.PlaylistAdd
 import paige.navic.icons.outlined.PlaylistRemove
 import paige.navic.icons.outlined.Queue
@@ -103,6 +105,8 @@ fun SongSheet(
 	onSleepTimer: (() -> Unit)? = null,
 	showPlaybackSpeed: Boolean = false,
 	onPlaybackSpeed: (() -> Unit)? = null,
+	showSaveBookmark: Boolean = false,
+	onSaveBookmark: (() -> Unit)? = null,
 	useSongTheme: Boolean = true
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
@@ -191,6 +195,19 @@ fun SongSheet(
 						leadingContent = { Icon(Icons.Outlined.Share, null) },
 						onClick = {
 							onShare()
+							onDismissRequest()
+						},
+						colors = colors,
+						contentPadding = contentPadding
+					)
+				}
+
+				if (showSaveBookmark && onSaveBookmark != null) {
+					ListItem(
+						content = { Text(stringResource(R.string.action_save_bookmark)) },
+						leadingContent = { Icon(Icons.Outlined.Bookmark, null) },
+						onClick = {
+							onSaveBookmark()
 							onDismissRequest()
 						},
 						colors = colors,
@@ -320,6 +337,19 @@ fun SongSheet(
 						onClick = {
 							onAddToQueue()
 							onDismissRequest()
+						},
+						colors = colors,
+						contentPadding = contentPadding
+					)
+				}
+
+				if (preferenceManager.audioMuseUrl.isNotBlank()) {
+					ListItem(
+						content = { Text(stringResource(R.string.action_similar_songs)) },
+						leadingContent = { Icon(Icons.Outlined.LibraryMusic, null) },
+						onClick = {
+							onDismissRequest()
+							backStack.add(Screen.SimilarSongs(song.id))
 						},
 						colors = colors,
 						contentPadding = contentPadding

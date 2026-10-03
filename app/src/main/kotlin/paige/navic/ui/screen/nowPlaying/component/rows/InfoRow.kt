@@ -40,7 +40,9 @@ fun NowPlayingInfoRow(
 	songIsStarred: Boolean,
 	onSetSongIsStarred: (Boolean) -> Unit,
 	songRating: Int,
-	onSetSongRating: (Int) -> Unit
+	onSetSongRating: (Int) -> Unit,
+	showSaveBookmark: Boolean,
+	onSaveBookmark: () -> Unit
 ) {
 	val backStack = LocalNavStack.current
 	val player = koinInject<MediaPlayerViewModel>()
@@ -138,7 +140,9 @@ fun NowPlayingInfoRow(
 			)
 			NowPlayingMoreButton(
 				songRating = songRating,
-				onSetSongRating = onSetSongRating
+				onSetSongRating = onSetSongRating,
+				showSaveBookmark = showSaveBookmark,
+				onSaveBookmark = onSaveBookmark
 			)
 		}
 	}

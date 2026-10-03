@@ -25,7 +25,9 @@ fun NowPlayingControlsRow(
 	songIsStarred: Boolean,
 	onSetSongIsStarred: (Boolean) -> Unit,
 	songRating: Int,
-	onSetSongRating: (Int) -> Unit
+	onSetSongRating: (Int) -> Unit,
+	showSaveBookmark: Boolean,
+	onSaveBookmark: () -> Unit
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 
@@ -39,7 +41,9 @@ fun NowPlayingControlsRow(
 				songIsStarred = songIsStarred,
 				onSetSongIsStarred = onSetSongIsStarred,
 				songRating = songRating,
-				onSetSongRating = onSetSongRating
+				onSetSongRating = onSetSongRating,
+				showSaveBookmark = showSaveBookmark,
+				onSaveBookmark = onSaveBookmark
 			)
 			NowPlayingProgressBar()
 			NowPlayingDurationsRow()

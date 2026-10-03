@@ -510,6 +510,28 @@ class AndroidMediaPlayerViewModel(
 		}
 	}
 
+	override fun getPlaybackPositionMs(): Long = controller?.currentPosition ?: 0L
+
+	override fun playSongAtPosition(song: DomainSong, positionMs: Long) = launchInView {
+		val mediaItem = withContext(Dispatchers.Default) { song.toMediaItem() }
+		controller?.let { player ->
+			player.stop()
+			player.clearMediaItems()
+			player.setMediaItem(mediaItem, positionMs)
+			player.prepare()
+			player.play()
+		}
+		_uiState.update { state ->
+			state.copy(
+				queue = listOf(song),
+				currentIndex = 0,
+				currentSong = song,
+				isLoading = true
+			)
+		}
+		checkAndAutoFillQueue()
+	}
+
 	override fun playNextSingle(song: DomainSong) = launchInView {
 		controller?.addMediaItem(
 			_uiState.value.currentIndex + 1,

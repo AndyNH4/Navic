@@ -60,6 +60,8 @@ abstract class MediaPlayerViewModel(
 	abstract fun moveQueueItem(fromIndex: Int, toIndex: Int)
 	abstract fun clearQueue()
 	abstract fun playAt(index: Int)
+	abstract fun playSongAtPosition(song: DomainSong, positionMs: Long)
+	abstract fun getPlaybackPositionMs(): Long
 	abstract fun playNextSingle(song: DomainSong)
 	abstract fun playNext(collection: DomainSongCollection)
 	abstract fun playRadio(radio: DomainRadio)

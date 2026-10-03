@@ -9,6 +9,9 @@ package paige.navic.util
 import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.time.Duration
+import kotlin.time.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Formats a `Duration` as a `String` in HH:MM:SS
@@ -57,4 +60,16 @@ fun Long.toFileSize(): String {
 	val roundedSize = (size * 100).toInt() / 100.0
 
 	return "$roundedSize ${units[digitGroups]}"
+}
+
+/**
+ * Formats an `Instant` as a readable local date-time
+ * string, e.g. 2026-06-20 14:22
+ */
+fun Instant.toReadableDateTime(): String {
+	val dateTime = toLocalDateTime(TimeZone.currentSystemDefault())
+
+	fun Int.twoDigits() = toString().padStart(2, '0')
+
+	return "${dateTime.date} ${dateTime.hour.twoDigits()}:${dateTime.minute.twoDigits()}"
 }

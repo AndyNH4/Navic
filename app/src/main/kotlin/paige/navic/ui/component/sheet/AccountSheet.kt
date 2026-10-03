@@ -52,6 +52,7 @@ import paige.navic.domain.manager.SleepTimerMode
 import paige.navic.domain.manager.canUserShare
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Bedtime
+import paige.navic.icons.outlined.Bookmark
 import paige.navic.icons.outlined.Forum
 import paige.navic.icons.outlined.Logout
 import paige.navic.icons.outlined.Share
@@ -149,7 +150,7 @@ fun AccountSheet(
 			Spacer(Modifier.height(9.dp))
 
 			val isSharingAllowed = sessionManager.canUserShare()
-			val count = if (isSharingAllowed) 4 else 3
+			val count = if (isSharingAllowed) 5 else 4
 
 			if (isSharingAllowed) {
 				SegmentedListItem(
@@ -165,6 +166,19 @@ fun AccountSheet(
 					content = { Text(stringResource(R.string.action_view_shares)) }
 				)
 			}
+
+			SegmentedListItem(
+				shapes = SegmentedListItemDefaults.segmentedShapes(
+					index = count - 4,
+					count = count
+				),
+				onClick = {
+					animateToDismiss()
+					backStack.add(Screen.BookmarkList)
+				},
+				leadingContent = { Icon(Icons.Outlined.Bookmark, null) },
+				content = { Text(stringResource(R.string.title_bookmarks)) }
+			)
 
 			SegmentedListItem(
 				shapes = SegmentedListItemDefaults.segmentedShapes(

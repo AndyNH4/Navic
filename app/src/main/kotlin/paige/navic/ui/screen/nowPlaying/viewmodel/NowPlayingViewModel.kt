@@ -12,12 +12,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
+import paige.navic.R
+import paige.navic.domain.manager.SnackBarManager
+import paige.navic.domain.repository.BookmarkRepository
 import paige.navic.domain.repository.SongRepository
 import paige.navic.shared.MediaPlayerViewModel
 
 class NowPlayingViewModel(
 	private val player: MediaPlayerViewModel,
-	private val songRepository: SongRepository
+	private val songRepository: SongRepository,
+	private val bookmarkRepository: BookmarkRepository,
+	private val snackBarManager: SnackBarManager
 ) : ViewModel(), KoinComponent {
 	val songIsStarred: StateFlow<Boolean>
 		field = MutableStateFlow(false)
@@ -58,6 +63,23 @@ class NowPlayingViewModel(
 					songRating.value = rating
 					songRepository.rateSong(song, rating)
 				}
+			}
+		}
+	}
+
+	fun saveBookmark() {
+		viewModelScope.launch {
+			runCatching {
+				val song = player.uiState.value.currentSong
+					?: throw IllegalStateException("No song playing")
+				bookmarkRepository.createBookmark(
+					songId = song.id,
+					positionMs = player.getPlaybackPositionMs()
+				)
+			}.onSuccess {
+				snackBarManager.notify(R.string.notice_bookmark_saved)
+			}.onFailure {
+				snackBarManager.notify(R.string.info_error)
 			}
 		}
 	}

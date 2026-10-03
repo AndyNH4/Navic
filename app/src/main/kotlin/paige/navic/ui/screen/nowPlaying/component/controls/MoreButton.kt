@@ -40,7 +40,9 @@ import kotlin.time.Duration
 @Composable
 fun NowPlayingMoreButton(
 	songRating: Int,
-	onSetSongRating: (Int) -> Unit
+	onSetSongRating: (Int) -> Unit,
+	showSaveBookmark: Boolean,
+	onSaveBookmark: () -> Unit
 ) {
 	val backStack = LocalNavStack.current
 	val player = koinInject<MediaPlayerViewModel>()
@@ -104,7 +106,9 @@ fun NowPlayingMoreButton(
 				onPlaybackSpeed = {
 					expanded = false
 					backStack.add(Screen.PlaybackSpeed)
-				}
+				},
+				showSaveBookmark = showSaveBookmark,
+				onSaveBookmark = onSaveBookmark
 			)
 		}
 	}

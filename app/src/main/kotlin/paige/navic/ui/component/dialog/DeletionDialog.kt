@@ -45,7 +45,8 @@ enum class DeletionEndpoint(
 	@StringRes val deletedText: Int
 ) {
 	PLAYLIST(R.string.title_delete_playlist, R.string.notice_deleted_playlist),
-	SHARE(R.string.title_delete_share, R.string.notice_deleted_share)
+	SHARE(R.string.title_delete_share, R.string.notice_deleted_share),
+	BOOKMARK(R.string.title_delete_bookmark, R.string.notice_deleted_bookmark)
 }
 
 class DeletionViewModel(
@@ -69,6 +70,8 @@ class DeletionViewModel(
 			try {
 				if (endpoint == DeletionEndpoint.SHARE) {
 					sessionManager.api.deleteShare(id)
+				} else if (endpoint == DeletionEndpoint.BOOKMARK) {
+					sessionManager.api.deleteBookmark(id)
 				} else {
 					syncManager.enqueueAction(
 						actionType = SyncActionType.DELETE_PLAYLIST,
