@@ -77,7 +77,8 @@ fun SongRow(
 	onPlayNext: () -> Unit,
 	onAddToQueue: () -> Unit,
 	rating: Int,
-	onSetRating: (Int) -> Unit
+	onSetRating: (Int) -> Unit,
+	supportingExtra: (@Composable () -> Unit)? = null
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val player = koinInject<MediaPlayerViewModel>()
@@ -126,6 +127,7 @@ fun SongRow(
 						showPlayCount = true
 					)
 				)
+				supportingExtra?.invoke()
 				if (song.userRating != null && song.userRating != 0) {
 					SmallRatingRow(rating = song.userRating)
 				}

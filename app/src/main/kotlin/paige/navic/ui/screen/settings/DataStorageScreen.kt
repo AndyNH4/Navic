@@ -285,8 +285,8 @@ fun SettingsDataStorageScreen() {
 					)
 
 					SegmentedListItem(
-						onClick = {},
-						content = { Text(stringResource(R.string.option_downloaded_songs)) },
+						onClick = dropUnlessResumed { backStack.add(Screen.Settings.DownloadedSongs) },
+						content = { Text(stringResource(R.string.action_browse_downloaded_music)) },
 						supportingContent = {
 							Text(
 								text = pluralStringResource(
@@ -300,8 +300,8 @@ fun SettingsDataStorageScreen() {
 					)
 
 					SegmentedListItem(
-						onClick = {},
-						content = { Text(stringResource(R.string.option_image_cache_size)) },
+						onClick = dropUnlessResumed { backStack.add(Screen.Settings.ImageCache) },
+						content = { Text(stringResource(R.string.action_browse_image_cache)) },
 						supportingContent = { Text(imageCacheSizeMb) },
 						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
 					)
