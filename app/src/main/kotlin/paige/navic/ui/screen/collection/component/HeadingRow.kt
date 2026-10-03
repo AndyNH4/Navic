@@ -28,8 +28,10 @@ import paige.navic.R
 import paige.navic.di.LocalNavStack
 import paige.navic.di.LocalSharedTransitionScope
 import paige.navic.domain.model.DomainAlbum
+import paige.navic.domain.model.DomainFolderCollection
 import paige.navic.domain.model.DomainPlaylist
 import paige.navic.domain.model.DomainSongCollection
+import paige.navic.domain.model.DomainStarredCollection
 import paige.navic.ui.component.common.CoverArt
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.theme.defaultFont
@@ -89,6 +91,8 @@ fun CollectionDetailScreenHeadingRow(
 			val subtitle = when (collection) {
 				is DomainAlbum -> collection.artistName
 				is DomainPlaylist -> collection.comment
+				is DomainFolderCollection -> null
+				is DomainStarredCollection -> null
 			}
 			subtitle?.let { subtitle ->
 				Text(

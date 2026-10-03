@@ -37,17 +37,18 @@ fun LazyGridScope.libraryScreenOverviewButton(
 	icon: ImageVector,
 	label: Int,
 	destination: NavKey,
-	start: Boolean
+	start: Boolean,
+	spanFullWidth: Boolean = false
 ) {
-	item(span = { GridItemSpan(1) }) {
+	item(span = { GridItemSpan(if (spanFullWidth) maxLineSpan else 1) }) {
 		val backStack = LocalNavStack.current
 		Button(
 			modifier = Modifier
 				.fillMaxWidth()
 				.height(42.dp)
 				.padding(
-					start = if (start) 16.dp else 0.dp,
-					end = if (!start) 16.dp else 0.dp,
+					start = if (start || spanFullWidth) 16.dp else 0.dp,
+					end = if (!start || spanFullWidth) 16.dp else 0.dp,
 				),
 			contentPadding = PaddingValues(horizontal = 12.dp),
 			elevation = null,

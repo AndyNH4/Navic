@@ -18,8 +18,10 @@ import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.model.DomainAlbum
+import paige.navic.domain.model.DomainFolderCollection
 import paige.navic.domain.model.DomainPlaylist
 import paige.navic.domain.model.DomainSongCollection
+import paige.navic.domain.model.DomainStarredCollection
 import paige.navic.ui.core.UiState
 import dev.zt64.subsonic.api.model.AlbumInfo as ApiAlbumInfo
 
@@ -51,6 +53,10 @@ class CollectionRepository(
 				dbRepository.syncPlaylistSongs(collection.id)
 				playlistDao.getPlaylistById(playlist.id)!!.toDomainModel()
 			}
+
+			is DomainFolderCollection -> Unit
+
+			is DomainStarredCollection -> Unit
 		}
 		return getLocalData(collectionId)
 	}

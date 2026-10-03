@@ -29,17 +29,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import paige.navic.R
+import paige.navic.data.database.dao.AlbumPlayAggregate
+import paige.navic.data.database.dao.SongPlayAggregate
 import paige.navic.di.LocalNavStack
 import paige.navic.domain.model.DomainAlbum
 import paige.navic.domain.model.DomainAlbumListType
 import paige.navic.domain.model.DomainArtist
 import paige.navic.domain.model.DomainGenre
+import paige.navic.domain.model.DomainMix
 import paige.navic.domain.model.DomainPlaylist
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.History
 import paige.navic.icons.outlined.LibraryAdd
 import paige.navic.icons.outlined.Shuffle
-import paige.navic.icons.outlined.Star
 import paige.navic.ui.component.layout.horizontalSection
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
@@ -47,8 +49,10 @@ import paige.navic.ui.screen.album.component.AlbumListScreenGridItem
 import paige.navic.ui.screen.artist.ArtistListScreenGridItem
 import paige.navic.ui.screen.genre.component.GenreListScreenCard
 import paige.navic.ui.screen.playlist.component.PlaylistListScreenGridItem
-import paige.navic.ui.screen.stats.viewmodel.StatisticsState
+import paige.navic.ui.screen.stats.viewmodel.ArtistStats
+import paige.navic.ui.screen.tunedin.component.tunedInSection
 import paige.navic.ui.util.withoutTop
+import kotlin.time.Duration
 
 @Composable
 fun LibraryScreenContent(
@@ -92,8 +96,16 @@ fun LibraryScreenContent(
 	// genres
 	genresState: UiState<ImmutableList<DomainGenre>>,
 
+	// tuned in
+	tunedInMixes: List<DomainMix>,
+	tunedInLoadingMixId: String?,
+	onPlayMix: (DomainMix) -> Unit,
+
 	// stats
-	statsState: StatisticsState
+	statsTopArtists: List<ArtistStats>,
+	statsTopAlbums: List<AlbumPlayAggregate>,
+	statsTopSongs: List<SongPlayAggregate>,
+	statsListeningTime: Duration
 ) {
 	LazyVerticalGrid(
 		modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -116,16 +128,17 @@ fun LibraryScreenContent(
 			start = false
 		)
 		libraryScreenOverviewButton(
-			icon = Icons.Outlined.Star,
-			label = R.string.option_sort_starred,
-			destination = Screen.Starred(),
-			start = true
-		)
-		libraryScreenOverviewButton(
 			icon = Icons.Outlined.History,
 			label = R.string.option_sort_frequent,
 			destination = Screen.AlbumList(true, DomainAlbumListType.Frequent),
-			start = false
+			start = false,
+			spanFullWidth = true
+		)
+
+		tunedInSection(
+			mixes = tunedInMixes,
+			loadingMixId = tunedInLoadingMixId,
+			onPlayMix = onPlayMix
 		)
 
 		horizontalSection(
@@ -220,7 +233,10 @@ fun LibraryScreenContent(
 		item(span = { GridItemSpan(maxLineSpan) }) {
 			val backStack = LocalNavStack.current
 			StatisticsOverviewCard(
-				statsState = statsState,
+				topArtists = statsTopArtists,
+				topAlbums = statsTopAlbums,
+				topSongs = statsTopSongs,
+				totalListeningTime = statsListeningTime,
 				onClick = { backStack.add(Screen.Statistics(true)) }
 			)
 		}

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
@@ -37,9 +39,9 @@ import paige.navic.domain.model.DomainSongListType
 import paige.navic.domain.model.settings.BottomBarVisibilityMode
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.component.dialog.QueueDuplicateDialog
-import paige.navic.ui.component.layout.NestedTopBar
 import paige.navic.ui.component.layout.PullToRefreshBox
 import paige.navic.ui.component.layout.RootBottomBar
+import paige.navic.ui.component.layout.RootTopBar
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.PersistentViewModelStoreOwner
 import paige.navic.ui.screen.album.viewmodel.AlbumListViewModel
@@ -109,8 +111,10 @@ fun StarredScreen() {
 
 	val isOnline by songsViewModel.isOnline.collectAsStateWithLifecycle()
 
+	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
 	Scaffold(
-		topBar = { NestedTopBar({ Text(stringResource(R.string.title_starred)) }) },
+		topBar = { RootTopBar({ Text(stringResource(R.string.title_starred)) }, scrollBehavior) },
 		bottomBar = {
 			val sizeClass = LocalSizeClass.current
 			val scrollManager = LocalBottomBarScrollManager.current
@@ -127,7 +131,8 @@ fun StarredScreen() {
 		PullToRefreshBox(
 			modifier = Modifier
 				.padding(top = innerPadding.calculateTopPadding())
-				.background(MaterialTheme.colorScheme.surface),
+				.background(MaterialTheme.colorScheme.surface)
+				.nestedScroll(scrollBehavior.nestedScrollConnection),
 			finished = !isAnythingLoading,
 			onRefresh = {
 				albumsViewModel.refreshAlbums(true)
