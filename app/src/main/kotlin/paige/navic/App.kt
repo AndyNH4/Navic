@@ -69,6 +69,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.koin.compose.koinInject
+import paige.navic.R
 import paige.navic.di.LocalBottomBarScrollManager
 import paige.navic.di.LocalNavStack
 import paige.navic.di.LocalSharedTransitionScope
@@ -78,6 +79,8 @@ import paige.navic.domain.manager.BottomBarScrollManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.SnackBarManager
+import paige.navic.domain.manager.VoiceActionManager
+import paige.navic.domain.manager.VoicePlayResolution
 import paige.navic.domain.model.settings.ExplicitContentPlayback
 import paige.navic.generated.BuildInfo
 import paige.navic.shared.MediaPlayerViewModel
@@ -90,8 +93,10 @@ import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screen.album.AlbumListScreen
 import paige.navic.ui.screen.artist.ArtistDetailScreen
 import paige.navic.ui.screen.artist.ArtistListScreen
+import paige.navic.ui.screen.bookmark.BookmarkListScreen
 import paige.navic.ui.screen.chat.ChatScreen
 import paige.navic.ui.screen.collection.CollectionDetailScreen
+import paige.navic.ui.screen.folder.FolderListScreen
 import paige.navic.ui.screen.genre.GenreDetailScreen
 import paige.navic.ui.screen.genre.GenreListScreen
 import paige.navic.ui.screen.imageView.ImageViewScreen
@@ -115,7 +120,9 @@ import paige.navic.ui.screen.settings.SettingsCustomHeadersScreen
 import paige.navic.ui.screen.settings.SettingsDataStorageScreen
 import paige.navic.ui.screen.settings.SettingsDeveloperScreen
 import paige.navic.ui.screen.settings.SettingsDownloadQualityScreen
+import paige.navic.ui.screen.settings.SettingsDownloadedSongsScreen
 import paige.navic.ui.screen.settings.SettingsEqualizerScreen
+import paige.navic.ui.screen.settings.SettingsImageCacheScreen
 import paige.navic.ui.screen.settings.SettingsLogsScreen
 import paige.navic.ui.screen.settings.SettingsNowPlayingScreen
 import paige.navic.ui.screen.settings.SettingsPlaybackScreen
@@ -123,6 +130,7 @@ import paige.navic.ui.screen.settings.SettingsScreen
 import paige.navic.ui.screen.settings.SettingsStreamingQualityScreen
 import paige.navic.ui.screen.settings.SettingsThemesScreen
 import paige.navic.ui.screen.share.ShareListScreen
+import paige.navic.ui.screen.song.SimilarSongsScreen
 import paige.navic.ui.screen.song.SongDetailScreen
 import paige.navic.ui.screen.song.SongDetailSheet
 import paige.navic.ui.screen.song.SongListScreen
@@ -167,6 +175,28 @@ fun App() {
 			snackBarState.showSnackbar(
 				resources.getString(event.resource, *event.args.toTypedArray())
 			)
+		}
+	}
+
+	val voiceActionManager = koinInject<VoiceActionManager>()
+	val player = koinInject<MediaPlayerViewModel>()
+	val pendingVoiceAction by voiceActionManager.pendingAction.collectAsStateWithLifecycle()
+
+	LaunchedEffect(pendingVoiceAction) {
+		val request = pendingVoiceAction ?: return@LaunchedEffect
+		voiceActionManager.consume()
+		when (val resolution = voiceActionManager.resolve(request)) {
+			is VoicePlayResolution.Play -> {
+				player.playNow(resolution.songs)
+				snackBarManager.notify(R.string.notice_voice_playing, resolution.label)
+			}
+			is VoicePlayResolution.OpenSearch -> {
+				backStack.clear()
+				backStack.add(Screen.Search(initialQuery = resolution.query))
+			}
+			VoicePlayResolution.RequiresLogin -> {
+				snackBarManager.notify(R.string.notice_voice_requires_login)
+			}
 		}
 	}
 
@@ -323,6 +353,10 @@ private fun entryProvider(
 			RadioListScreen(key.nested)
 		}
 
+		entry<Screen.FolderList>(metadata = navtabMetadata) { key ->
+			FolderListScreen(key.nested)
+		}
+
 		// misc
 		entry<Screen.Login> {
 			LoginScreen()
@@ -374,13 +408,20 @@ private fun entryProvider(
 			)
 		}
 		entry<Screen.Search>(metadata = navtabMetadata) { key ->
-			SearchScreen(key.nested)
+			SearchScreen(key.nested, key.initialQuery)
 		}
 		entry<Screen.ShareList> {
 			ShareListScreen()
 		}
+		entry<Screen.BookmarkList> {
+			BookmarkListScreen()
+		}
 		entry<Screen.ArtistDetail> { key ->
 			ArtistDetailScreen(key.artist)
+		}
+
+		entry<Screen.SimilarSongs> { key ->
+			SimilarSongsScreen(key.songId)
 		}
 
 		entry<Screen.Statistics>(metadata = navtabMetadata) { key ->
@@ -432,6 +473,12 @@ private fun entryProvider(
 		}
 		entry<Screen.Settings.DownloadQuality> {
 			SettingsDownloadQualityScreen()
+		}
+		entry<Screen.Settings.DownloadedSongs> {
+			SettingsDownloadedSongsScreen()
+		}
+		entry<Screen.Settings.ImageCache> {
+			SettingsImageCacheScreen()
 		}
 		entry<Screen.Settings.Logs> {
 			SettingsLogsScreen()

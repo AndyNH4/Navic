@@ -11,17 +11,21 @@ import paige.navic.R
 import paige.navic.icons.Icons
 import paige.navic.icons.filled.Album
 import paige.navic.icons.filled.Artist
+import paige.navic.icons.filled.Folder
 import paige.navic.icons.filled.Genre
 import paige.navic.icons.filled.LibraryMusic
 import paige.navic.icons.filled.Radio
+import paige.navic.icons.filled.Star
 import paige.navic.icons.outlined.Album
 import paige.navic.icons.outlined.Artist
+import paige.navic.icons.outlined.Folder
 import paige.navic.icons.outlined.Genre
 import paige.navic.icons.outlined.LibraryMusic
 import paige.navic.icons.outlined.Note
 import paige.navic.icons.outlined.PlaylistPlay
 import paige.navic.icons.outlined.Radio
 import paige.navic.icons.outlined.Search
+import paige.navic.icons.outlined.Star
 import paige.navic.icons.outlined.Statistics
 
 enum class NavigationTab(
@@ -81,5 +85,17 @@ enum class NavigationTab(
 		destination = Screen.Statistics(),
 		iconFilled = Icons.Outlined.Statistics,
 		label = R.string.title_statistics
+	),
+	FOLDERS(
+		destination = Screen.FolderList(),
+		iconFilled = Icons.Filled.Folder,
+		iconOutlined = Icons.Outlined.Folder,
+		label = R.string.title_folders
+	),
+	STARRED(
+		destination = Screen.Starred(),
+		iconFilled = Icons.Filled.Star,
+		iconOutlined = Icons.Outlined.Star,
+		label = R.string.title_starred
 	)
 }

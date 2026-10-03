@@ -23,8 +23,10 @@ import paige.navic.ui.component.sheet.ChangelogViewModel
 import paige.navic.ui.screen.album.viewmodel.AlbumListViewModel
 import paige.navic.ui.screen.artist.viewmodel.ArtistDetailViewModel
 import paige.navic.ui.screen.artist.viewmodel.ArtistListViewModel
+import paige.navic.ui.screen.bookmark.viewmodel.BookmarkListViewModel
 import paige.navic.ui.screen.chat.viewmodel.ChatViewModel
 import paige.navic.ui.screen.collection.viewmodel.CollectionDetailViewModel
+import paige.navic.ui.screen.folder.viewmodel.FolderViewModel
 import paige.navic.ui.screen.genre.viewmodel.GenreListViewModel
 import paige.navic.ui.screen.lyrics.viewmodel.LyricsScreenViewModel
 import paige.navic.ui.screen.nowPlaying.viewmodel.NowPlayingViewModel
@@ -38,11 +40,15 @@ import paige.navic.ui.screen.search.viewmodel.SearchViewModel
 import paige.navic.ui.screen.settings.viewmodel.LyricsPriorityViewModel
 import paige.navic.ui.screen.settings.viewmodel.NavtabsViewModel
 import paige.navic.ui.screen.settings.viewmodel.SettingsDataStorageViewModel
+import paige.navic.ui.screen.settings.viewmodel.SettingsDownloadedSongsViewModel
+import paige.navic.ui.screen.settings.viewmodel.SettingsImageCacheViewModel
 import paige.navic.ui.screen.share.viewmodel.ShareDialogViewModel
 import paige.navic.ui.screen.share.viewmodel.ShareListViewModel
+import paige.navic.ui.screen.song.viewmodel.SimilarSongsViewModel
 import paige.navic.ui.screen.song.viewmodel.SongDetailViewModel
 import paige.navic.ui.screen.song.viewmodel.SongListViewModel
 import paige.navic.ui.screen.stats.viewmodel.StatisticsViewModel
+import paige.navic.ui.screen.tunedin.viewmodel.TunedInViewModel
 import paige.navic.ui.viewmodel.RootViewModel
 
 @UnstableApi
@@ -153,17 +159,32 @@ val viewModelModule = module {
 		)
 	}
 	viewModelOf(::SongDetailViewModel)
+	viewModel { (songId: String) ->
+		SimilarSongsViewModel(
+			songId = songId,
+			audioMuseRepository = get(),
+			songRepository = get(),
+			downloadManager = get()
+		)
+	}
 	viewModelOf(::SettingsDataStorageViewModel)
+	viewModelOf(::SettingsDownloadedSongsViewModel)
+	viewModelOf(::SettingsImageCacheViewModel)
 	viewModelOf(::ChangelogViewModel)
 	viewModel { params ->
 		NowPlayingViewModel(
 			player = params.get(),
-			songRepository = get()
+			songRepository = get(),
+			bookmarkRepository = get(),
+			snackBarManager = get()
 		)
 	}
+	viewModelOf(::BookmarkListViewModel)
+	viewModelOf(::FolderViewModel)
 	viewModelOf(::NavtabsViewModel)
 	viewModelOf(::LyricsPriorityViewModel)
 	viewModelOf(::RootViewModel)
 	viewModelOf(::StatisticsViewModel)
+	viewModelOf(::TunedInViewModel)
 	viewModelOf(::ChatViewModel)
 }

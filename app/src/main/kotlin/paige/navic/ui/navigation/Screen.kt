@@ -76,6 +76,12 @@ sealed interface Screen : NavKey {
 		val nested: Boolean = false
 	) : Screen
 
+	@Immutable
+	@Serializable
+	data class FolderList(
+		val nested: Boolean = false
+	) : Screen
+
 	// misc
 	@Immutable
 	@Serializable
@@ -126,13 +132,22 @@ sealed interface Screen : NavKey {
 
 	@Immutable
 	@Serializable
+	data class SimilarSongs(val songId: String) : Screen
+
+	@Immutable
+	@Serializable
 	data class Search(
-		val nested: Boolean = false
+		val nested: Boolean = false,
+		val initialQuery: String? = null
 	) : Screen
 
 	@Immutable
 	@Serializable
 	data object ShareList : Screen
+
+	@Immutable
+	@Serializable
+	data object BookmarkList : Screen
 
 	@Immutable
 	@Serializable
@@ -207,6 +222,14 @@ sealed interface Screen : NavKey {
 		@Immutable
 		@Serializable
 		data object DownloadQuality : Settings
+
+		@Immutable
+		@Serializable
+		data object DownloadedSongs : Settings
+
+		@Immutable
+		@Serializable
+		data object ImageCache : Settings
 
 		@Immutable
 		@Serializable

@@ -10,8 +10,11 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import paige.navic.domain.repository.AlbumRepository
 import paige.navic.domain.repository.ArtistRepository
+import paige.navic.domain.repository.AudioMuseRepository
+import paige.navic.domain.repository.BookmarkRepository
 import paige.navic.domain.repository.CollectionRepository
 import paige.navic.domain.repository.DbRepository
+import paige.navic.domain.repository.FolderRepository
 import paige.navic.domain.repository.GenreRepository
 import paige.navic.domain.repository.LyricsRepository
 import paige.navic.domain.repository.PlayerStateRepository
@@ -20,12 +23,15 @@ import paige.navic.domain.repository.RadioRepository
 import paige.navic.domain.repository.SearchRepository
 import paige.navic.domain.repository.ShareRepository
 import paige.navic.domain.repository.SongRepository
+import paige.navic.domain.repository.TunedInRepository
 
 val repositoryModule = module {
 	singleOf(::AlbumRepository)
 	singleOf(::ArtistRepository)
+	singleOf(::BookmarkRepository)
 	singleOf(::CollectionRepository)
 	singleOf(::DbRepository)
+	singleOf(::FolderRepository)
 	singleOf(::GenreRepository)
 	singleOf(::LyricsRepository)
 	singleOf(::PlayerStateRepository)
@@ -34,4 +40,6 @@ val repositoryModule = module {
 	singleOf(::SearchRepository)
 	singleOf(::ShareRepository)
 	singleOf(::SongRepository)
+	singleOf(::AudioMuseRepository)
+	singleOf(::TunedInRepository)
 }
