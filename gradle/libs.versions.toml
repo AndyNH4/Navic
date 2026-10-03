@@ -60,6 +60,7 @@ androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", vers
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "androidx-media3" }
 androidx-media3-ktor = { module = "androidx.media3:media3-datasource-ktor", version.ref = "androidx-media3" }
+androidx-media3-cast = { module = "androidx.media3:media3-cast", version.ref = "androidx-media3" }
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "androidx-glance" }
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "androidx-glance" }
 androidx-browser = { module = "androidx.browser:browser", version = "1.10.0" }
@@ -104,7 +105,7 @@ compose = [
 	"compose-material3-windowSize"
 ]
 coil = ["coil-compose", "coil-network-ktor3"]
-media3 = ["androidx-media3-exoplayer", "androidx-media3-session", "androidx-media3-ktor"]
+media3 = ["androidx-media3-exoplayer", "androidx-media3-session", "androidx-media3-ktor", "androidx-media3-cast"]
 glance = ["androidx-glance-appwidget", "androidx-glance-material3"]
 ktor = ["ktor-client-core", "ktor-client-contentNegotiation", "ktor-serialization-json"]
 ktor-android = ["ktor-client-okhttp"]

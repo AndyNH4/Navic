@@ -17,10 +17,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -30,6 +36,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import androidx.media3.cast.MediaRouteButton
+import androidx.media3.common.util.UnstableApi
+import com.kyant.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -37,6 +46,8 @@ import org.koin.core.parameter.parametersOf
 import paige.navic.R
 import paige.navic.di.LocalNavStack
 import paige.navic.di.LocalSheetState
+import paige.navic.domain.manager.CastManager
+import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.model.settings.NowPlayingBackgroundStyle
 import paige.navic.domain.model.settings.ToolbarPosition
@@ -55,12 +66,17 @@ import paige.navic.ui.screen.nowPlaying.component.controls.NowPlayingArtworkPage
 import paige.navic.ui.screen.nowPlaying.component.rows.NowPlayingControlsRow
 import paige.navic.ui.screen.nowPlaying.viewmodel.NowPlayingViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, UnstableApi::class)
 @Composable
 fun NowPlayingScreen() {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val player = koinInject<MediaPlayerViewModel>()
+	val castManager = koinInject<CastManager>()
+	val connectivityManager = koinInject<ConnectivityManager>()
 	val backStack = LocalNavStack.current
+
+	val isCastAvailable by castManager.isCastAvailable.collectAsStateWithLifecycle()
+	val isOnline by connectivityManager.isOnline.collectAsStateWithLifecycle()
 
 	val currentScreen = backStack.lastOrNull()
 	val isPlayerCurrent = currentScreen is Screen.NowPlaying
@@ -107,6 +123,10 @@ fun NowPlayingScreen() {
 					)
 				},
 				actions = {
+					// cast only makes sense for online streams
+					if (isCastAvailable && isOnline) {
+						CastRouteButton()
+					}
 					SheetActionButton(
 						icon = Icons.Outlined.Lyrics,
 						contentDescription = stringResource(R.string.action_lyrics),
@@ -172,7 +192,9 @@ fun NowPlayingScreen() {
 							songIsStarred = songIsStarred,
 							onSetSongIsStarred = { viewModel.starSong(it) },
 							songRating = songRating,
-							onSetSongRating = { viewModel.rateSong(it) }
+							onSetSongRating = { viewModel.rateSong(it) },
+							showSaveBookmark = isOnline && song?.id?.startsWith("radio_") == false,
+							onSaveBookmark = { viewModel.saveBookmark() }
 						)
 					}
 				} else {
@@ -191,11 +213,35 @@ fun NowPlayingScreen() {
 							songIsStarred = songIsStarred,
 							onSetSongIsStarred = { viewModel.starSong(it) },
 							songRating = songRating,
-							onSetSongRating = { viewModel.rateSong(it) }
+							onSetSongRating = { viewModel.rateSong(it) },
+							showSaveBookmark = isOnline && song?.id?.startsWith("radio_") == false,
+							onSaveBookmark = { viewModel.saveBookmark() }
 						)
 					}
 				}
 			}
+		}
+	}
+}
+
+/**
+ * media3's route button dressed as a [SheetActionButton]. Only composed when
+ * Cast is available; the tint follows the theme via [LocalContentColor].
+ */
+@OptIn(ExperimentalMaterial3Api::class, UnstableApi::class)
+@Composable
+private fun CastRouteButton() {
+	Surface(
+		shape = ContinuousRoundedRectangle(4.dp),
+		color = MaterialTheme.colorScheme.surfaceContainer,
+		shadowElevation = 4.dp,
+		modifier = Modifier.size(45.dp, 40.dp)
+	) {
+		CompositionLocalProvider(
+			LocalMinimumInteractiveComponentSize provides 0.dp,
+			LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+		) {
+			MediaRouteButton(modifier = Modifier.fillMaxSize())
 		}
 	}
 }
