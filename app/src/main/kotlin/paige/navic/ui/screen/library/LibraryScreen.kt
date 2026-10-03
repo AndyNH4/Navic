@@ -50,6 +50,7 @@ import paige.navic.ui.screen.playlist.dialog.PlaylistCreateDialog
 import paige.navic.ui.screen.playlist.viewmodel.PlaylistListViewModel
 import paige.navic.ui.screen.share.dialog.ShareDialog
 import paige.navic.ui.screen.stats.viewmodel.StatisticsViewModel
+import paige.navic.ui.screen.tunedin.viewmodel.TunedInViewModel
 import paige.navic.ui.viewmodel.RootViewModel
 import kotlin.time.Duration
 
@@ -91,7 +92,16 @@ fun LibraryScreen() {
 	val statsViewModel = koinViewModel<StatisticsViewModel>(
 		viewModelStoreOwner = persistentViewModelStoreOwner
 	)
-	val statsState by statsViewModel.state.collectAsStateWithLifecycle()
+	val statsTopArtists by statsViewModel.topArtists.collectAsStateWithLifecycle()
+	val statsTopAlbums by statsViewModel.topAlbums.collectAsStateWithLifecycle()
+	val statsTopSongs by statsViewModel.topSongs.collectAsStateWithLifecycle()
+	val statsListeningTime by statsViewModel.localListeningTime.collectAsStateWithLifecycle()
+
+	val tunedInViewModel = koinViewModel<TunedInViewModel>(
+		viewModelStoreOwner = persistentViewModelStoreOwner
+	)
+	val tunedInMixes by tunedInViewModel.mixes.collectAsStateWithLifecycle()
+	val tunedInLoadingMixId by tunedInViewModel.loadingMixId.collectAsStateWithLifecycle()
 
 	val loginManager = koinInject<LoginManager>()
 	val loginState by loginManager.loginState.collectAsStateWithLifecycle()
@@ -142,6 +152,7 @@ fun LibraryScreen() {
 				playlistsViewModel.refreshPlaylists(true)
 				artistsViewModel.refreshArtists(true)
 				genresViewModel.refreshGenres(true)
+				tunedInViewModel.refreshMixes()
 			},
 			key = listOf(albumsState, playlistsState, artistsState, genresState)
 		) {
@@ -197,7 +208,13 @@ fun LibraryScreen() {
 				},
 
 				genresState = genresState,
-				statsState = statsState
+				tunedInMixes = tunedInMixes,
+				tunedInLoadingMixId = tunedInLoadingMixId,
+				onPlayMix = { tunedInViewModel.playMix(player, it) },
+				statsTopArtists = statsTopArtists,
+				statsTopAlbums = statsTopAlbums,
+				statsTopSongs = statsTopSongs,
+				statsListeningTime = statsListeningTime
 			)
 		}
 	}
