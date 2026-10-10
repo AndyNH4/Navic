@@ -8,6 +8,7 @@ package paige.navic.exoplayer
 
 import android.content.Intent
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -49,15 +50,21 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 	private val playHistoryManager: PlayHistoryManager by inject()
 
 	private lateinit var exoEqualizerManager: ExoEqualizerManager
+	private lateinit var legObserver: (ExoPlayer) -> Unit
 
 	private lateinit var scrobbleManager: AndroidScrobbleManager
 
 	override fun onCreate() {
 		super.onCreate()
 		exoEqualizerManager = ExoEqualizerManager(
-            equalizerManager,
-            this
-        )
+			equalizerManager,
+			this
+		)
+		// EQ follows the engine legs (leg B is created lazily on the first
+		// armed fade), not the session wrapper, so both legs stay equalized
+		// for the whole crossfade
+		legObserver = { leg -> exoEqualizerManager.attachLeg(leg) }
+		stateHolder.addLegObserver(legObserver)
 		stateHolder.initState()
 		// take over an ongoing cast session that started before the service
 		castManager.onPlaybackServiceReady()
@@ -71,22 +78,20 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 
 		stateHolder.playerInstance.let { player ->
 			scrobbleManager = AndroidScrobbleManager(
-                player,
-                serviceScope,
-                connectivityManager,
-                syncManager,
-                sessionManager,
-                preferenceManager,
-                playHistoryManager
-            )
+				player,
+				serviceScope,
+				connectivityManager,
+				syncManager,
+				sessionManager,
+				preferenceManager,
+				playHistoryManager
+			)
+		}
 
-			player.addListener(exoEqualizerManager)
-
-			exoEqualizerManager.apply {
-				applyEqualizerMode(equalizerManager.config.value.mode)
-				scope.launch(Dispatchers.Main) {
-					equalizerManager.config.collect { updateEqualizer() }
-				}
+		exoEqualizerManager.apply {
+			applyEqualizerMode(equalizerManager.config.value.mode)
+			scope.launch(Dispatchers.Main) {
+				equalizerManager.config.collect { onConfigChanged(it) }
 			}
 		}
 	}
@@ -100,7 +105,8 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 	}
 
 	override fun onDestroy() {
-		exoEqualizerManager.releaseEqualizer()
+		stateHolder.removeLegObserver(legObserver)
+		exoEqualizerManager.release()
 		scrobbleManager.release()
 		serviceScope.cancel()
 		stopForeground(STOP_FOREGROUND_REMOVE)

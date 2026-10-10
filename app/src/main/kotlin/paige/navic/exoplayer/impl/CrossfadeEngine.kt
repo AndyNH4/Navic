@@ -16,6 +16,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import kotlin.math.cos
+import kotlin.math.sin
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.util.Logger
 
@@ -218,8 +220,11 @@ class CrossfadeEngine(
 			if (!fadeActive) return
 			val t = ((SystemClock.uptimeMillis() - rampStartUptimeMs).toFloat() / rampDurationMs)
 				.coerceIn(0f, 1f)
-			leadingPlayer.volume = 1f - t
-			standbyPlayer.volume = t
+			// Equal-power curve: cos² + sin² = 1 keeps the summed power of the two
+			// (uncorrelated) tracks constant; a linear ramp dips ~3dB mid-fade.
+			val angle = t * (Math.PI / 2.0).toFloat()
+			leadingPlayer.volume = cos(angle)
+			standbyPlayer.volume = sin(angle)
 			if (t >= 1f) {
 				completeFade()
 			} else {

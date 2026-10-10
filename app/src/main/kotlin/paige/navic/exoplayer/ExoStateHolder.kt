@@ -80,6 +80,27 @@ class ExoStateHolder: KoinComponent {
 	private lateinit var sessionWrapper: CrossfadeForwardingPlayer
 	private lateinit var crossfadeEngine: CrossfadeEngine
 
+	// observers notified for every crossfade-engine leg, existing and future
+	// (leg B is created lazily by the engine); ExoPlaybackService uses this to
+	// attach the equalizer to both legs
+	private val legObservers = mutableListOf<(ExoPlayer) -> Unit>()
+	private val engineLegs = mutableListOf<ExoPlayer>()
+
+	fun addLegObserver(observer: (ExoPlayer) -> Unit) {
+		legObservers.add(observer)
+		engineLegs.forEach(observer)
+	}
+
+	fun removeLegObserver(observer: (ExoPlayer) -> Unit) {
+		legObservers.remove(observer)
+	}
+
+	private fun registerLeg(player: ExoPlayer): ExoPlayer {
+		engineLegs.add(player)
+		legObservers.forEach { it(player) }
+		return player
+	}
+
 	// one gain processor per engine leg: a single AudioProcessor instance
 	// cannot feed two AudioSinks concurrently
 	val gainProcessor = ExoAudioGainProcessor()
@@ -252,14 +273,16 @@ class ExoStateHolder: KoinComponent {
 	}
 
 	private suspend fun createPlayerInstance(): Player = mutex.withLock {
-		val leadingLeg = createLegPlayer(gainProcessor, handleAudioFocus = true)
+		val leadingLeg = registerLeg(createLegPlayer(gainProcessor, handleAudioFocus = true))
 		sessionWrapper = CrossfadeForwardingPlayer(leadingLeg)
 		playerInstance = sessionWrapper
 		crossfadeEngine = CrossfadeEngine(
 			preferenceManager = preferenceManager,
 			audioAttributes = audioAttributes,
 			legA = leadingLeg,
-			standbyLegFactory = { createLegPlayer(gainProcessorB, handleAudioFocus = false) },
+			standbyLegFactory = {
+				registerLeg(createLegPlayer(gainProcessorB, handleAudioFocus = false))
+			},
 			wrapper = sessionWrapper
 		).apply { start() }
 
@@ -347,6 +370,7 @@ class ExoStateHolder: KoinComponent {
 		}
 		// stops the fade machinery and releases both legs
 		crossfadeEngine.release()
+		engineLegs.clear()
 		playerInstance.release()
 		isInitialized = !isInitialized
 	}
