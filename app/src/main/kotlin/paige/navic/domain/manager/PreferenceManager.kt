@@ -164,4 +164,13 @@ class PreferenceManager(
 	var dangerousSslNoopEnabled by preference(false)
 
 	var audioMuseUrl by preference("")
+
+	// starred screen sorting preferences
+	var starredSongSortType by jsonPreference<DomainSongListType>(DomainSongListType.FrequentlyPlayed)
+	var starredSongSortReversed by preference(false)
+
+	var starredAlbumSortType by jsonPreference<DomainAlbumListType>(DomainAlbumListType.AlphabeticalByArtist)
+	var starredAlbumSortReversed by preference(false)
+
+	var starredArtistSortType by preference(DomainArtistListType.AlphabeticalByName)
 }

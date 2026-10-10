@@ -56,7 +56,6 @@ import paige.navic.domain.model.DomainArtist
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.DomainStarredCollection
 import paige.navic.ui.component.common.ContentUnavailable
-import paige.navic.ui.component.common.SongRow
 import paige.navic.ui.component.layout.ArtCarouselItem
 import paige.navic.ui.component.sheet.ArtistSheet
 import paige.navic.ui.component.sheet.CollectionSheet
@@ -72,6 +71,8 @@ fun StarredScreenContent(
 	innerPadding: PaddingValues,
 	onSetShareId: (String) -> Unit,
 	isOnline: Boolean = false,
+	selectedSegment: StarredSegment,
+	onSelectSegment: (StarredSegment) -> Unit,
 
 	songsState: UiState<ImmutableList<DomainSong>>,
 	selectedSong: DomainSong?,
@@ -123,8 +124,6 @@ fun StarredScreenContent(
 
 	var songsToAddToPlaylist by rememberSaveable { mutableStateOf<ImmutableList<DomainSong>?>(null) }
 
-	var selectedSegment by rememberSaveable { mutableStateOf(StarredSegment.Songs) }
-
 	val songsListState = rememberLazyListState()
 	val albumsGridState = rememberLazyGridState()
 	val artistsGridState = rememberLazyGridState()
@@ -150,7 +149,7 @@ fun StarredScreenContent(
 						index = index,
 						count = StarredSegment.entries.size
 					),
-					onClick = { selectedSegment = segment },
+					onClick = { onSelectSegment(segment) },
 					selected = selectedSegment == segment,
 					label = { Text(stringResource(segment.labelRes)) }
 				)
@@ -210,8 +209,7 @@ fun StarredScreenContent(
 								key = { _, song -> song.id }
 							) { index, song ->
 								val download = allDownloads.find { it.songId == song.id }
-								SongRow(
-									modifier = Modifier.fillMaxWidth(),
+								StarredScreenSongRow(
 									song = song,
 									selected = selectedSong == song,
 									onClick = { onPlaySong(index) },
@@ -375,7 +373,7 @@ fun StarredScreenContent(
 	}
 }
 
-private enum class StarredSegment(val labelRes: Int) {
+enum class StarredSegment(val labelRes: Int) {
 	Songs(R.string.title_songs),
 	Albums(R.string.title_albums),
 	Artists(R.string.title_artists)

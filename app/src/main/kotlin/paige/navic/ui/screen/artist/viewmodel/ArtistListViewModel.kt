@@ -125,9 +125,9 @@ class ArtistListViewModel(
 		}
 	}
 
-	fun setListType(newListType: DomainArtistListType) {
+	fun setListType(newListType: DomainArtistListType, persist: Boolean = true) {
 		listType.value = newListType
-		preferenceManager.artistSortType = newListType
+		if (persist) preferenceManager.artistSortType = newListType
 		refreshArtists(false)
 	}
 

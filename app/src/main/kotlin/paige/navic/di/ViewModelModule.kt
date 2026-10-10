@@ -103,6 +103,7 @@ val viewModelModule = module {
 		AlbumListViewModel(
 			initialListType = params.getOrNull<DomainAlbumListType>(),
 			initialFilters = params.getOrNull<Set<DomainFilter>>(),
+			initialReversed = params.getOrNull<Boolean>(),
 			repository = get(),
 			sessionManager = get(),
 			preferenceManager = get()
@@ -112,6 +113,7 @@ val viewModelModule = module {
 		SongListViewModel(
 			initialListType = params.getOrNull<DomainSongListType>(),
 			initialFilters = params.getOrNull<Set<DomainFilter>>(),
+			initialReversed = params.getOrNull<Boolean>(),
 			repository = get(),
 			downloadManager = get(),
 			sessionManager = get(),

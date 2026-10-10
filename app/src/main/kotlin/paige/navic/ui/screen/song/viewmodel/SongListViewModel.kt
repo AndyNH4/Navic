@@ -30,6 +30,7 @@ import paige.navic.ui.core.UiState
 class SongListViewModel(
 	initialListType: DomainSongListType? = null,
 	initialFilters: Set<DomainFilter>? = null,
+	initialReversed: Boolean? = null,
 	private val repository: SongRepository,
 	private val downloadManager: DownloadManager,
 	private val sessionManager: SessionManager,
@@ -59,7 +60,7 @@ class SongListViewModel(
 		field = MutableStateFlow(initialListType ?: preferenceManager.songSortType)
 
 	val selectedReversed: StateFlow<Boolean>
-		field = MutableStateFlow(preferenceManager.songSortReversed)
+		field = MutableStateFlow(initialReversed ?: preferenceManager.songSortReversed)
 
 	val selectedFilters: StateFlow<Set<DomainFilter>>
 		field = MutableStateFlow(
@@ -124,15 +125,15 @@ class SongListViewModel(
 		}
 	}
 
-	fun setSorting(sorting: DomainSongListType) {
+	fun setSorting(sorting: DomainSongListType, persist: Boolean = true) {
 		selectedSorting.value = sorting
-		preferenceManager.songSortType = sorting
+		if (persist) preferenceManager.songSortType = sorting
 		refreshSongs(false)
 	}
 
-	fun setReversed(reversed: Boolean) {
+	fun setReversed(reversed: Boolean, persist: Boolean = true) {
 		selectedReversed.value = reversed
-		preferenceManager.songSortReversed = reversed
+		if (persist) preferenceManager.songSortReversed = reversed
 		refreshSongs(false)
 	}
 

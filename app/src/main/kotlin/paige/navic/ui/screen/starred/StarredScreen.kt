@@ -30,12 +30,9 @@ import paige.navic.R
 import paige.navic.di.LocalBottomBarScrollManager
 import paige.navic.di.LocalSizeClass
 import paige.navic.domain.manager.PreferenceManager
-import paige.navic.domain.model.DomainAlbumListType
-import paige.navic.domain.model.DomainArtistListType
 import paige.navic.domain.model.DomainFilter
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.DomainSongCollection
-import paige.navic.domain.model.DomainSongListType
 import paige.navic.domain.model.settings.BottomBarVisibilityMode
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.component.dialog.QueueDuplicateDialog
@@ -49,6 +46,8 @@ import paige.navic.ui.screen.artist.viewmodel.ArtistListViewModel
 import paige.navic.ui.screen.share.dialog.ShareDialog
 import paige.navic.ui.screen.song.viewmodel.SongListViewModel
 import paige.navic.ui.screen.starred.component.StarredScreenContent
+import paige.navic.ui.screen.starred.component.StarredScreenSortButton
+import paige.navic.ui.screen.starred.component.StarredSegment
 import kotlin.time.Duration
 
 @Composable
@@ -60,8 +59,9 @@ fun StarredScreen() {
 		key = "starredSongs",
 		parameters = {
 			parametersOf(
-				DomainSongListType.FrequentlyPlayed,
-				setOf(DomainFilter.Starred)
+				preferenceManager.starredSongSortType,
+				setOf(DomainFilter.Starred),
+				preferenceManager.starredSongSortReversed
 			)
 		},
 		viewModelStoreOwner = persistentViewModelStoreOwner
@@ -71,13 +71,16 @@ fun StarredScreen() {
 	val selectedSongIsStarred by songsViewModel.starred.collectAsStateWithLifecycle()
 	val selectedSongRating by songsViewModel.selectedSongRating.collectAsStateWithLifecycle()
 	val allDownloads by songsViewModel.allDownloads.collectAsStateWithLifecycle()
+	val songsSorting by songsViewModel.selectedSorting.collectAsStateWithLifecycle()
+	val songsReversed by songsViewModel.selectedReversed.collectAsStateWithLifecycle()
 
 	val albumsViewModel = koinViewModel<AlbumListViewModel>(
 		key = "starredAlbums",
 		parameters = {
 			parametersOf(
-				DomainAlbumListType.AlphabeticalByArtist,
-				setOf(DomainFilter.Starred)
+				preferenceManager.starredAlbumSortType,
+				setOf(DomainFilter.Starred),
+				preferenceManager.starredAlbumSortReversed
 			)
 		},
 		viewModelStoreOwner = persistentViewModelStoreOwner
@@ -86,12 +89,14 @@ fun StarredScreen() {
 	val selectedAlbum by albumsViewModel.selectedAlbum.collectAsStateWithLifecycle()
 	val selectedAlbumIsStarred by albumsViewModel.starred.collectAsStateWithLifecycle()
 	val selectedAlbumRating by albumsViewModel.rating.collectAsStateWithLifecycle()
+	val albumsSorting by albumsViewModel.listType.collectAsStateWithLifecycle()
+	val albumsReversed by albumsViewModel.selectedReversed.collectAsStateWithLifecycle()
 
 	val artistsViewModel = koinViewModel<ArtistListViewModel>(
 		key = "starredArtists",
 		parameters = {
 			parametersOf(
-				DomainArtistListType.AlphabeticalByName,
+				preferenceManager.starredArtistSortType,
 				setOf(DomainFilter.Starred)
 			)
 		},
@@ -101,6 +106,9 @@ fun StarredScreen() {
 	val selectedArtist by artistsViewModel.selectedArtist.collectAsStateWithLifecycle()
 	val selectedArtistAlbums by artistsViewModel.selectedArtistAlbums.collectAsStateWithLifecycle()
 	val selectedArtistIsStarred by artistsViewModel.starred.collectAsStateWithLifecycle()
+	val artistsSorting by artistsViewModel.listType.collectAsStateWithLifecycle()
+
+	var selectedSegment by rememberSaveable { mutableStateOf(StarredSegment.Songs) }
 
 	var shareId by rememberSaveable { mutableStateOf<String?>(null) }
 	var shareExpiry by remember { mutableStateOf<Duration?>(null) }
@@ -114,7 +122,42 @@ fun StarredScreen() {
 	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
 	Scaffold(
-		topBar = { RootTopBar({ Text(stringResource(R.string.title_starred)) }, scrollBehavior) },
+		topBar = {
+			RootTopBar(
+				{ Text(stringResource(R.string.title_starred)) },
+				scrollBehavior,
+				actions = {
+					StarredScreenSortButton(
+						selectedSegment = selectedSegment,
+						songSorting = songsSorting,
+						songReversed = songsReversed,
+						onSetSongSorting = {
+							songsViewModel.setSorting(it, persist = false)
+							preferenceManager.starredSongSortType = it
+						},
+						onSetSongReversed = {
+							songsViewModel.setReversed(it, persist = false)
+							preferenceManager.starredSongSortReversed = it
+						},
+						albumSorting = albumsSorting,
+						albumReversed = albumsReversed,
+						onSetAlbumSorting = {
+							albumsViewModel.setListType(it, persist = false)
+							preferenceManager.starredAlbumSortType = it
+						},
+						onSetAlbumReversed = {
+							albumsViewModel.setReversed(it, persist = false)
+							preferenceManager.starredAlbumSortReversed = it
+						},
+						artistSorting = artistsSorting,
+						onSetArtistSorting = {
+							artistsViewModel.setListType(it, persist = false)
+							preferenceManager.starredArtistSortType = it
+						}
+					)
+				}
+			)
+		},
 		bottomBar = {
 			val sizeClass = LocalSizeClass.current
 			val scrollManager = LocalBottomBarScrollManager.current
@@ -145,6 +188,8 @@ fun StarredScreen() {
 				innerPadding = innerPadding,
 				onSetShareId = { shareId = it },
 				isOnline = isOnline,
+				selectedSegment = selectedSegment,
+				onSelectSegment = { selectedSegment = it },
 
 				songsState = songsState,
 				selectedSong = selectedSong,
