@@ -88,7 +88,7 @@ class ChangelogViewModel(
 		viewModelScope.launch {
 			release.value = try {
 				val release: GitHubRelease =
-					updateClient.get("https://api.github.com/repos/ssalggnikool/Navic/releases/latest")
+					updateClient.get("https://api.github.com/repos/AndyNH4/Navic/releases/latest")
 						.body()
 				val remoteVersion = release.tag
 					.filter { it.isDigit() }

@@ -82,10 +82,8 @@ import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.manager.VoiceActionManager
 import paige.navic.domain.manager.VoicePlayResolution
 import paige.navic.domain.model.settings.ExplicitContentPlayback
-import paige.navic.generated.BuildInfo
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.component.layout.SideBar
-import paige.navic.ui.component.sheet.ChangelogSheet
 import paige.navic.ui.component.snackbar.NavicSnackBar
 import paige.navic.ui.navigation.BottomSheetSceneStrategy
 import paige.navic.ui.navigation.NowPlayingSceneStrategy
@@ -298,9 +296,12 @@ fun App() {
 						)
 					}
 				}
+				// update checks disabled; re-enable together with the toggle in SettingsAboutScreen
+				/*
 				if (preferenceManager.checkForUpdates && !BuildInfo.FDROID) {
 					ChangelogSheet()
 				}
+				*/
 			}
 		}
 	}

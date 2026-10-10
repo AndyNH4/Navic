@@ -92,7 +92,7 @@
     <string name="action_dont_show_again">不再顯示</string>
     <string name="action_open_settings">開啟設定</string>
     <string name="action_reset">重設</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Rezeener %1$s</string>
     <string name="info_error_show">顯示詳情</string>
     <string name="info_error_hide">隱藏詳情</string>
     <string name="info_unknown">未知</string>
@@ -225,7 +225,7 @@
     <string name="title_top_songs">熱門歌曲</string>
     <string name="title_top_artists">熱門藝人</string>
     <string name="title_top_albums">熱門專輯</string>
-    <string name="title_link_confirmation">離開 Navic</string>
+    <string name="title_link_confirmation">離開 Rezeener</string>
     <string name="title_audio_effects">音訊效果</string>
     <string name="title_chat">聊天</string>
     <string name="subtitle_appearance">主題、色彩、版面配置、應用程式圖示</string>
@@ -246,8 +246,8 @@
     <string name="subtitle_download_quality">調整下載音樂的品質</string>
     <string name="subtitle_dynamic_theming">根據封面圖動態調整專輯與藝人頁面的主題</string>
     <string name="subtitle_app_icon_designer">設計者：%1$s</string>
-    <string name="subtitle_local_network_denied">您需要授予 Navic 區域網路存取權限，才能連線到您的伺服器。</string>
-    <string name="subtitle_notifications_denied">您需要授予 Navic 通知權限，才能接收下載與同步通知。</string>
+    <string name="subtitle_local_network_denied">您需要授予 Rezeener 區域網路存取權限，才能連線到您的伺服器。</string>
+    <string name="subtitle_notifications_denied">您需要授予 Rezeener 通知權限，才能接收下載與同步通知。</string>
     <string name="subtitle_equalizer">調整並強化音訊</string>
     <string name="subtitle_equalizer_disabled">啟用音訊卸載時無法使用</string>
     <string name="subtitle_audio_effects">調整音樂的聽感</string>
@@ -479,7 +479,7 @@
     <string name="info_repeat_off">關閉重複播放</string>
     <string name="info_repeat_one">單曲重複</string>
     <string name="info_repeat_all">全部重複</string>
-    <string name="info_app_icon">由於 Android 系統限制，變更應用程式圖示時 Navic 會自動關閉。若您的啟動器會動態調整圖示主題，部分圖示在主畫面上可能看起來相同。</string>
+    <string name="info_app_icon">由於 Android 系統限制，變更應用程式圖示時 Rezeener 會自動關閉。若您的啟動器會動態調整圖示主題，部分圖示在主畫面上可能看起來相同。</string>
     <string name="info_equalizer_unsupported">您的裝置不支援此功能。</string>
     <string name="info_equalizer_mode_not_builtin">請使用外部等化器的專屬應用程式進行調整。</string>
     <string name="info_lyric_provider_disclaimer">啟用 LRCLIB 和/或 LyricsPlus 將向外部的非關聯網路服務發出請求。</string>
