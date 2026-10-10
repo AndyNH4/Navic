@@ -567,4 +567,7 @@
     <plurals name="count_images">
         <item quantity="other">%1$d 张图片</item>
     </plurals>
+    <string name="option_lyrics_word_scale">逐字放大</string>
+    <string name="subtitle_lyrics_word_scale">有逐字时间信息时放大正在演唱的字</string>
+    <string name="action_toggle_translation">切换翻译</string>
 </resources>

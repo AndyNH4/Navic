@@ -30,7 +30,6 @@ import paige.navic.data.database.entity.LyricEntity
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.lyrics.LyricsConfig
-import paige.navic.domain.model.lyrics.LyricsLine
 import paige.navic.domain.model.lyrics.LyricsProvider
 import paige.navic.domain.model.lyrics.LyricsResult
 import paige.navic.domain.parser.LyricsContentParser
@@ -77,10 +76,11 @@ class LyricsRepository(
 			val cached = lyricDao.getLyrics(song.id)
 			if (cached != null) {
 				val parsed = LyricsContentParser.parse(cached.rawContent)
-				if (!parsed.isNullOrEmpty()) return LyricsResult(
-					lines = parsed,
+				if (parsed != null && parsed.lines.isNotEmpty()) return LyricsResult(
+					lines = parsed.lines,
 					providerName = cached.providerName,
-					rawContent = cached.rawContent
+					rawContent = cached.rawContent,
+					translationLanguage = parsed.translationLanguage
 				)
 			}
 		} catch (ex: Exception) {
@@ -108,36 +108,28 @@ class LyricsRepository(
 					LyricsProvider.Id.SUBSONIC -> {
 						val subsonicLyrics = sessionManager.api.getLyrics(song.id).firstOrNull()
 
-						val lines = subsonicLyrics?.lines?.flatMap { line ->
-							if (!subsonicLyrics.synced && line.value.contains("\n")) {
-								line.value.lineSequence()
-									.filter { it.isNotBlank() }
-									.map { LyricsLine(time = null, text = it.trim()) }
-									.toList()
+						// build raw lrc content and run it through the parser so inline word
+						// timestamps and [tr] translation lines in line.value are honoured
+						val raw = subsonicLyrics?.lines?.joinToString("\n") { line ->
+							val start = line.start
+							if (subsonicLyrics.synced && start != null) {
+								val t = start.milliseconds
+								val m = t.inWholeMinutes.toString().padStart(2, '0')
+								val s = (t.inWholeSeconds % 60).toString().padStart(2, '0')
+								val ms = (t.inWholeMilliseconds % 1000).toString()
+									.padStart(3, '0')
+								"[$m:$s.$ms]${line.value}"
 							} else {
-								val time =
-									if (subsonicLyrics.synced) line.start?.milliseconds else null
-								listOf(LyricsLine(time = time, text = line.value))
+								line.value
 							}
 						}
 
-						if (!lines.isNullOrEmpty()) {
-							rawContentToCache = lines.joinToString("\n") { l ->
-								val t = l.time
-								if (t != null) {
-									val m = t.inWholeMinutes.toString().padStart(2, '0')
-									val s = (t.inWholeSeconds % 60).toString().padStart(2, '0')
-									val ms = ((t.inWholeMilliseconds % 1000) / 10).toString()
-										.padStart(2, '0')
-									"[$m:$s.$ms]${l.text}"
-								} else l.text
-							}
-						}
-						lines
+						rawContentToCache = raw?.takeIf { it.isNotBlank() }
+						raw?.let { LyricsContentParser.parse(it) }
 					}
 				}
 
-				if (!parsedLyrics.isNullOrEmpty()) {
+				if (parsedLyrics != null && parsedLyrics.lines.isNotEmpty()) {
 					try {
 						rawContentToCache?.let { content ->
 							val entity = LyricEntity(
@@ -151,9 +143,10 @@ class LyricsRepository(
 						Logger.e("LyricRepository", "Failed to cache lyrics for ${song.title}", e)
 					}
 					return LyricsResult(
-						lines = parsedLyrics,
+						lines = parsedLyrics.lines,
 						providerName = provider.id.name,
-						rawContent = rawContentToCache
+						rawContent = rawContentToCache,
+						translationLanguage = parsedLyrics.translationLanguage
 					)
 				}
 			} catch (e: Exception) {

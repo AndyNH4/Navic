@@ -6,6 +6,7 @@
 
 package paige.navic.ui.screen.lyrics.component
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,13 +31,21 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.model.lyrics.LyricsWord
+import kotlin.time.Duration
+
+private const val ACTIVE_WORD_SCALE = 1.18f
 
 @Composable
 fun LyricsScreenKaraokeText(
@@ -45,7 +55,9 @@ fun LyricsScreenKaraokeText(
 	isSynced: Boolean,
 	isBeatByBeat: Boolean,
 	onClick: () -> Unit,
-	modifier: Modifier = Modifier
+	modifier: Modifier = Modifier,
+	words: List<LyricsWord>? = null,
+	currentDuration: Duration? = null
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 
@@ -58,6 +70,62 @@ fun LyricsScreenKaraokeText(
 
 	val lyricsBeatByBeat = preferenceManager.lyricsBeatByBeat
 	val lyricsBrightInactive = preferenceManager.lyricsBrightInactive
+	val lyricsWordScale = preferenceManager.lyricsWordScale
+
+	val baseFontSize = 32.sp
+
+	// word-level timing available: enlarge the word currently being sung on top of
+	// the regular gradient wipe. gated by beat-by-beat since it is part of that system
+	val wordMode = lyricsBeatByBeat && lyricsWordScale && isActive
+		&& !words.isNullOrEmpty() && currentDuration != null
+
+	val currentWordIndex = if (wordMode) {
+		words!!.indexOfLast { currentDuration!! >= it.time }
+	} else -1
+
+	val wordScales = remember(words) {
+		words?.map { Animatable(1f) }.orEmpty()
+	}
+
+	LaunchedEffect(currentWordIndex, wordMode) {
+		wordScales.forEachIndexed { index, animatable ->
+			launch {
+				animatable.animateTo(
+					targetValue = if (wordMode && index == currentWordIndex) ACTIVE_WORD_SCALE else 1f,
+					animationSpec = spring(
+						dampingRatio = Spring.DampingRatioMediumBouncy,
+						stiffness = Spring.StiffnessMediumLow
+					)
+				)
+			}
+		}
+	}
+
+	// locate words inside the original text the same way calculateWordProgress does,
+	// so the rendered string never changes, only spans are layered on top
+	val displayText = if (wordMode && currentWordIndex >= 0 && words != null) {
+		buildAnnotatedString {
+			append(text)
+			var searchFrom = 0
+			words.forEachIndexed { index, word ->
+				if (word.text.isEmpty()) return@forEachIndexed
+				val wordIndex = text.indexOf(word.text, startIndex = searchFrom, ignoreCase = true)
+				if (wordIndex < 0) return@forEachIndexed
+				searchFrom = wordIndex + word.text.length
+				val scale = wordScales.getOrNull(index)?.value ?: 1f
+				if (scale > 1.001f) {
+					addStyle(
+						SpanStyle(
+							fontSize = baseFontSize * scale,
+							fontWeight = FontWeight.ExtraBold
+						),
+						start = wordIndex,
+						end = wordIndex + word.text.length
+					)
+				}
+			}
+		}
+	} else AnnotatedString(text)
 
 	val isRtl = textLayoutResult?.let { layout ->
 		(0 until layout.lineCount).any { lineIndex ->
@@ -78,8 +146,8 @@ fun LyricsScreenKaraokeText(
 
 	Box(modifier = modifier.clickable { onClick() }) {
 		Text(
-			text = text,
-			fontSize = 32.sp,
+			text = displayText,
+			fontSize = baseFontSize,
 			fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
 			textAlign = if (isRtl) TextAlign.End else TextAlign.Start,
 			style = MaterialTheme.typography.headlineLargeEmphasized,
@@ -91,8 +159,8 @@ fun LyricsScreenKaraokeText(
 
 		if (isActive) {
 			Text(
-				text = text,
-				fontSize = 32.sp,
+				text = displayText,
+				fontSize = baseFontSize,
 				fontWeight = FontWeight.Bold,
 				textAlign = if (isRtl) TextAlign.End else TextAlign.Start,
 				style = MaterialTheme.typography.headlineLargeEmphasized,

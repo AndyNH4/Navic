@@ -13,5 +13,6 @@ import kotlin.time.Duration
 data class LyricsLine(
 	val time: Duration? = null,
 	val text: String,
-	val words: List<LyricsWord>? = null
+	val words: List<LyricsWord>? = null,
+	val translation: String? = null
 )

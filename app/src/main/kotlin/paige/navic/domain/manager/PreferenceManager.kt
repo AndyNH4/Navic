@@ -173,4 +173,7 @@ class PreferenceManager(
 	var starredAlbumSortReversed by preference(false)
 
 	var starredArtistSortType by preference(DomainArtistListType.AlphabeticalByName)
+
+	var lyricsWordScale by preference(true)
+	var lyricsShowTranslation by preference(false)
 }

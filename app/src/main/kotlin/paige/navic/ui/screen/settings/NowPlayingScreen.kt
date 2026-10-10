@@ -111,44 +111,51 @@ fun SettingsNowPlayingScreen() {
 						onClick = { lyricProvidersSheetOpen = true },
 						content = { Text(stringResource(R.string.action_configure_lyric_providers)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_configure_lyric_providers)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 8)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.lyricsAutoscroll,
 						onCheckedChange = { preferenceManager.lyricsAutoscroll = it },
 						content = { Text(stringResource(R.string.option_lyrics_autoscroll)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 8)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.lyricsBeatByBeat,
 						onCheckedChange = { preferenceManager.lyricsBeatByBeat = it },
 						content = { Text(stringResource(R.string.option_lyrics_beat_by_beat)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 8)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.lyricsFakeBeatByBeat,
 						onCheckedChange = { preferenceManager.lyricsFakeBeatByBeat = it },
 						content = { Text(stringResource(R.string.option_lyrics_fake_beat_by_beat)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_lyrics_fake_beat_by_beat)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 8)
+					)
+					SettingsToggleItem(
+						checked = preferenceManager.lyricsWordScale,
+						onCheckedChange = { preferenceManager.lyricsWordScale = it },
+						content = { Text(stringResource(R.string.option_lyrics_word_scale)) },
+						supportingContent = { Text(stringResource(R.string.subtitle_lyrics_word_scale)) },
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 4, count = 8)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.lyricsKeepAlive,
 						onCheckedChange = { preferenceManager.lyricsKeepAlive = it },
 						content = { Text(stringResource(R.string.option_lyrics_keep_alive)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 4, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 5, count = 8)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.lyricsBlur,
 						onCheckedChange = { preferenceManager.lyricsBlur = it },
 						content = { Text(stringResource(R.string.option_lyrics_blur)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 5, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 6, count = 8)
 					)
 					SettingsToggleItem(
 						checked = preferenceManager.lyricsBrightInactive,
 						onCheckedChange = { preferenceManager.lyricsBrightInactive = it },
 						content = { Text(stringResource(R.string.option_lyrics_bright_inactive)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 6, count = 7)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 7, count = 8)
 					)
 				}
 

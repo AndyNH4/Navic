@@ -611,4 +611,7 @@
 		<item quantity="one">%1$d image</item>
 		<item quantity="other">%1$d images</item>
 	</plurals>
+	<string name="option_lyrics_word_scale">Word-by-word scaling</string>
+	<string name="subtitle_lyrics_word_scale">Enlarge the word currently being sung when word timings are available</string>
+	<string name="action_toggle_translation">Toggle translation</string>
 </resources>

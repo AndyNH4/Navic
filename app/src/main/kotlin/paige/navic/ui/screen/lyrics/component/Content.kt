@@ -12,7 +12,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,18 +24,24 @@ import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -40,6 +49,8 @@ import org.koin.compose.koinInject
 import paige.navic.R
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.model.lyrics.LyricsResult
+import paige.navic.icons.Icons
+import paige.navic.icons.outlined.Translate
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.util.calculateWordProgress
 import kotlin.math.abs
@@ -84,6 +95,9 @@ fun LyricsScreenContent(
 		&& !isSelecting
 		&& isSynced
 
+	val showTranslation = preferenceManager.lyricsShowTranslation
+	val lyricsBrightInactive = preferenceManager.lyricsBrightInactive
+
 	LaunchedEffect(activeIndex, isSelecting) {
 		if (!lyricsAutoscroll) return@LaunchedEffect
 
@@ -122,90 +136,85 @@ fun LyricsScreenContent(
 		}
 	}
 
-	LazyColumn(
-		Modifier.fillMaxSize(),
-		state = listState,
-		contentPadding = contentPadding + PaddingValues(top = 16.dp)
-	) {
-		itemsIndexed(lyrics) { index, line ->
-			val isActive = if (isSynced) index == activeIndex else true
-			val isSelected = selectedIndices.contains(index)
-			val isEmphasised = (isActive && !isSelecting) || isSelected
-			val distance = abs(index - activeIndex)
+	Box(Modifier.fillMaxSize()) {
+		LazyColumn(
+			Modifier.fillMaxSize(),
+			state = listState,
+			contentPadding = contentPadding + PaddingValues(top = 16.dp)
+		) {
+			itemsIndexed(lyrics) { index, line ->
+				val isActive = if (isSynced) index == activeIndex else true
+				val isSelected = selectedIndices.contains(index)
+				val isEmphasised = (isActive && !isSelecting) || isSelected
+				val distance = abs(index - activeIndex)
 
-			val lineTime = line.time ?: 0.milliseconds
-			val preEmphasis = 200.milliseconds
-			val nextTime = lyrics.getOrNull(index + 1)?.time ?: duration
-			val lineDuration =
-				(nextTime - lineTime).coerceAtLeast(1.milliseconds)
-			val effectiveStart = lineTime - preEmphasis
-			val effectiveDuration = lineDuration + preEmphasis
+				val lineTime = line.time ?: 0.milliseconds
+				val preEmphasis = 200.milliseconds
+				val nextTime = lyrics.getOrNull(index + 1)?.time ?: duration
+				val lineDuration =
+					(nextTime - lineTime).coerceAtLeast(1.milliseconds)
+				val effectiveStart = lineTime - preEmphasis
+				val effectiveDuration = lineDuration + preEmphasis
 
-			val lineProgress = when {
-				currentDuration < effectiveStart -> 0f
-				currentDuration >= effectiveStart + effectiveDuration -> 1f
-				else -> ((currentDuration - effectiveStart) / effectiveDuration)
-					.toFloat()
-					.coerceIn(0f..1f)
-			}
+				val lineProgress = when {
+					currentDuration < effectiveStart -> 0f
+					currentDuration >= effectiveStart + effectiveDuration -> 1f
+					else -> ((currentDuration - effectiveStart) / effectiveDuration)
+						.toFloat()
+						.coerceIn(0f..1f)
+				}
 
-			val lineBackgroundColor by animateColorAsState(
-				if (isSelected)
-					MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-				else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0f)
-			)
-			val lineScale by animateFloatAsState(
-				targetValue = when {
+				val lineBackgroundColor by animateColorAsState(
+					if (isSelected)
+						MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+					else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0f)
+				)
+				val lineScale by animateFloatAsState(
+					targetValue = when {
+						!isSynced -> 1f
+						isEmphasised -> 1.05f
+						else -> 0.98f
+					},
+					animationSpec = spring(stiffness = Spring.StiffnessLow)
+				)
+				val linePaddingY by animateDpAsState(
+					targetValue = if (isEmphasised) 20.dp else 12.dp,
+					animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+				)
+				val lineOffsetY by animateDpAsState(
+					targetValue = when {
+						isActive || isSelecting || !isSynced -> 0.dp
+						(index > activeIndex) -> 8.dp
+						else -> (-8).dp
+					},
+					animationSpec = spring(stiffness = Spring.StiffnessLow)
+				)
+				val lineBlurRadius by animateDpAsState(
+					targetValue = when {
+						isSelecting -> 0.dp
+						!isSynced -> 0.dp
+						isActive -> 0.dp
+						distance == 1 -> 1.5.dp
+						distance == 2 -> 3.dp
+						else -> 4.5.dp
+					},
+					animationSpec = spring(stiffness = Spring.StiffnessLow)
+				)
+
+				val highlight = if (isSelecting) isSelected else isActive
+				val hasWords = !line.words.isNullOrEmpty()
+				val progress = when {
+					isSelecting -> if (isSelected) 1f else 0f
 					!isSynced -> 1f
-					isEmphasised -> 1.05f
-					else -> 0.98f
-				},
-				animationSpec = spring(stiffness = Spring.StiffnessLow)
-			)
-			val linePaddingY by animateDpAsState(
-				targetValue = if (isEmphasised) 20.dp else 12.dp,
-				animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
-			)
-			val lineOffsetY by animateDpAsState(
-				targetValue = when {
-					isActive || isSelecting || !isSynced -> 0.dp
-					(index > activeIndex) -> 8.dp
-					else -> (-8).dp
-				},
-				animationSpec = spring(stiffness = Spring.StiffnessLow)
-			)
-			val lineBlurRadius by animateDpAsState(
-				targetValue = when {
-					isSelecting -> 0.dp
-					!isSynced -> 0.dp
-					isActive -> 0.dp
-					distance == 1 -> 1.5.dp
-					distance == 2 -> 3.dp
-					else -> 4.5.dp
-				},
-				animationSpec = spring(stiffness = Spring.StiffnessLow)
-			)
+					isActive -> line.words
+						?.takeIf { it.isNotEmpty() }
+						?.calculateWordProgress(line.text, currentDuration)
+						?: lineProgress
 
-			val highlight = if (isSelecting) isSelected else isActive
-			val hasWords = !line.words.isNullOrEmpty()
-			val progress = when {
-				isSelecting -> if (isSelected) 1f else 0f
-				!isSynced -> 1f
-				isActive -> line.words
-					?.takeIf { it.isNotEmpty() }
-					?.calculateWordProgress(line.text, currentDuration)
-					?: lineProgress
+					else -> 0f
+				}
 
-				else -> 0f
-			}
-
-			LyricsScreenKaraokeText(
-				text = line.text,
-				progress = progress,
-				isActive = highlight,
-				isSynced = isSynced,
-				isBeatByBeat = hasWords || preferenceManager.lyricsFakeBeatByBeat,
-				onClick = {
+				val onLineClick = {
 					if (isSelecting) {
 						val lineTextLength = line.text.length
 						if (selectedIndices.isEmpty()) {
@@ -247,32 +256,110 @@ fun LyricsScreenContent(
 							player.resume()
 						}
 					}
-				},
-				modifier = Modifier
-					.padding(horizontal = 32.dp, vertical = linePaddingY)
-					.graphicsLayer {
-						scaleX = lineScale
-						scaleY = lineScale
-						translationY = lineOffsetY.toPx()
-					}
-					.then(
-						if (lineBlurRadius > 0.dp && !isSelecting && preferenceManager.lyricsBlur) {
-							Modifier.blur(lineBlurRadius)
-						} else Modifier
+				}
+
+				Column(
+					modifier = Modifier
+						.padding(horizontal = 32.dp, vertical = linePaddingY)
+						.graphicsLayer {
+							scaleX = lineScale
+							scaleY = lineScale
+							translationY = lineOffsetY.toPx()
+						}
+						.then(
+							if (lineBlurRadius > 0.dp && !isSelecting && preferenceManager.lyricsBlur) {
+								Modifier.blur(lineBlurRadius)
+							} else Modifier
+						)
+						.background(lineBackgroundColor, MaterialTheme.shapes.medium)
+				) {
+					LyricsScreenKaraokeText(
+						text = line.text,
+						progress = progress,
+						isActive = highlight,
+						isSynced = isSynced,
+						isBeatByBeat = hasWords || preferenceManager.lyricsFakeBeatByBeat,
+						onClick = onLineClick,
+						words = line.words,
+						currentDuration = currentDuration
 					)
-					.background(lineBackgroundColor, MaterialTheme.shapes.medium)
-			)
+
+					val translation = line.translation
+					if (translation != null && showTranslation) {
+						val translationAlpha by animateFloatAsState(
+							targetValue = if (highlight) 1f else when {
+								!isSynced -> 1f
+								lyricsBrightInactive -> 0.9f
+								else -> 0.35f
+							},
+							animationSpec = spring(stiffness = Spring.StiffnessLow)
+						)
+						Text(
+							text = translation,
+							fontSize = 18.sp,
+							fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
+							color = MaterialTheme.colorScheme.onSurfaceVariant
+								.copy(alpha = translationAlpha),
+							modifier = Modifier
+								.fillMaxWidth()
+								.clickable(onClick = onLineClick)
+								.padding(top = 6.dp)
+						)
+					}
+				}
+			}
+			providerName?.let { providerName ->
+				item {
+					Text(
+						stringResource(
+							R.string.info_lyrics_provider,
+							providerName
+						),
+						textAlign = TextAlign.Center,
+						modifier = Modifier.fillMaxWidth()
+					)
+				}
+			}
 		}
-		providerName?.let { providerName ->
-			item {
-				Text(
-					stringResource(
-						R.string.info_lyrics_provider,
-						providerName
-					),
-					textAlign = TextAlign.Center,
-					modifier = Modifier.fillMaxWidth()
+
+		if (data?.hasTranslation == true && !isSelecting) {
+			val toggleTranslation = {
+				preferenceManager.lyricsShowTranslation = !preferenceManager.lyricsShowTranslation
+			}
+			val fabModifier = Modifier
+				.align(Alignment.BottomEnd)
+				.padding(contentPadding)
+				.padding(16.dp)
+			val fabContainerColor = if (showTranslation) {
+				MaterialTheme.colorScheme.primaryContainer
+			} else {
+				MaterialTheme.colorScheme.surfaceContainerHigh
+			}
+			val language = data.translationLanguage
+			if (language != null) {
+				ExtendedFloatingActionButton(
+					onClick = toggleTranslation,
+					modifier = fabModifier,
+					containerColor = fabContainerColor,
+					text = { Text(language) },
+					icon = {
+						Icon(
+							imageVector = Icons.Outlined.Translate,
+							contentDescription = stringResource(R.string.action_toggle_translation)
+						)
+					}
 				)
+			} else {
+				SmallFloatingActionButton(
+					onClick = toggleTranslation,
+					modifier = fabModifier,
+					containerColor = fabContainerColor
+				) {
+					Icon(
+						imageVector = Icons.Outlined.Translate,
+						contentDescription = stringResource(R.string.action_toggle_translation)
+					)
+				}
 			}
 		}
 	}

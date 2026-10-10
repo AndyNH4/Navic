@@ -12,7 +12,9 @@ import androidx.compose.runtime.Immutable
 data class LyricsResult(
 	val lines: List<LyricsLine>,
 	val providerName: String,
-	val rawContent: String? = null
+	val rawContent: String? = null,
+	val translationLanguage: String? = null
 ) {
 	val isSynced: Boolean = lines.any { it.time != null }
+	val hasTranslation: Boolean = lines.any { it.translation != null }
 }
