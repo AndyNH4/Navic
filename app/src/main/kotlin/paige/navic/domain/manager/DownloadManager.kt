@@ -45,21 +45,32 @@ import paige.navic.R
 import paige.navic.data.database.dao.AlbumDao
 import paige.navic.data.database.dao.DownloadDao
 import paige.navic.data.database.dao.LyricDao
+import paige.navic.data.database.dao.PinnedCollectionDao
+import paige.navic.data.database.dao.PlaylistDao
+import paige.navic.data.database.dao.SongDao
 import paige.navic.data.database.entity.DownloadEntity
 import paige.navic.data.database.entity.DownloadStatus
 import paige.navic.data.database.entity.LyricEntity
+import paige.navic.data.database.entity.PinnedCollectionEntity
+import paige.navic.data.database.mapper.toDomainModel
+import paige.navic.domain.model.DomainFolderCollection
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.DomainSongCollection
+import paige.navic.domain.model.DomainStarredCollection
 import paige.navic.domain.repository.LyricsRepository
 import paige.navic.util.Logger
 import paige.navic.util.createHttpClientWithPreferences
+import kotlin.time.Clock
 import coil3.PlatformContext as CoilPlatformContext
 
 class DownloadManager(
 	private val coilPlatformContext: CoilPlatformContext,
 	private val imageLoader: ImageLoader,
 	private val downloadDao: DownloadDao,
+	private val pinnedCollectionDao: PinnedCollectionDao,
 	private val albumDao: AlbumDao,
+	private val playlistDao: PlaylistDao,
+	private val songDao: SongDao,
 	private val storageManager: StorageManager,
 	private val lyricsRepository: LyricsRepository,
 	private val lyricDao: LyricDao,
@@ -117,6 +128,8 @@ class DownloadManager(
 	private val downloadProgressMutex = Mutex()
 	private var totalSongsToDownload = 0
 	private var completedSongsDownloaded = 0
+
+	private val pinnedSyncMutex = Mutex()
 
 	private suspend fun updateDownloadNotification() {
 		if (totalSongsToDownload == 0) return
@@ -218,9 +231,68 @@ class DownloadManager(
 	}
 
 	suspend fun downloadCollection(collection: DomainSongCollection) {
+		// folders are browsed remotely and never cached locally,
+		// so they can't be checked for new songs after a sync
+		if (collection !is DomainFolderCollection) {
+			pinnedCollectionDao.pinCollection(
+				PinnedCollectionEntity(
+					collectionId = collection.id,
+					pinnedAt = Clock.System.now().toEpochMilliseconds()
+				)
+			)
+		}
 		collection.songs
 			.filter { !isDownloaded(it.id) }
 			.forEach { downloadSong(it) }
+	}
+
+	suspend fun downloadStarredSongIfPinned(song: DomainSong) {
+		if (pinnedCollectionDao.isCollectionPinned(DomainStarredCollection.STARRED_COLLECTION_ID)) {
+			downloadSong(song)
+		}
+	}
+
+	suspend fun syncPinnedCollectionDownloads() {
+		try {
+			pinnedCollectionDao.getPinnedCollections().forEach { pin ->
+				syncPinnedCollectionDownload(pin.collectionId)
+			}
+		} catch (e: Exception) {
+			if (e is CancellationException) throw e
+			Logger.e("DownloadManager", "failed to sync pinned collection downloads", e)
+		}
+	}
+
+	suspend fun syncPinnedCollectionDownload(collectionId: String) {
+		if (!pinnedSyncMutex.tryLock()) return
+		try {
+			if (!pinnedCollectionDao.isCollectionPinned(collectionId)) return
+			val songs = resolveCollectionSongs(collectionId) ?: return
+			val existingStatuses = downloadDao.getAllDownloadsList()
+				.associate { it.songId to it.status }
+			songs
+				.filter {
+					val status = existingStatuses[it.id]
+					status != DownloadStatus.DOWNLOADED && status != DownloadStatus.DOWNLOADING
+				}
+				.forEach { downloadSong(it) }
+		} catch (e: Exception) {
+			if (e is CancellationException) throw e
+			Logger.e("DownloadManager", "failed to sync pinned collection $collectionId", e)
+		} finally {
+			pinnedSyncMutex.unlock()
+		}
+	}
+
+	private suspend fun resolveCollectionSongs(collectionId: String): List<DomainSong>? {
+		return when (collectionId) {
+			DomainStarredCollection.STARRED_COLLECTION_ID ->
+				songDao.getStarredSongsList().map { it.toDomainModel() }
+
+			else ->
+				albumDao.getAlbumById(collectionId)?.toDomainModel()?.songs
+					?: playlistDao.getPlaylistById(collectionId)?.toDomainModel()?.songs
+		}
 	}
 
 	fun downloadEntireLibrary(songs: List<DomainSong>) {
@@ -340,6 +412,9 @@ class DownloadManager(
 	}
 
 	fun deleteDownloadedCollection(collection: DomainSongCollection) {
+		scope.launch {
+			pinnedCollectionDao.unpinCollection(collection.id)
+		}
 		collection.songs.forEach { song ->
 			deleteDownload(song.id)
 		}
@@ -370,6 +445,7 @@ class DownloadManager(
 			cancelAllActiveDownloads()
 			storageManager.clearDownloads()
 			downloadDao.clearAllDownloads()
+			pinnedCollectionDao.clearAllPinnedCollections()
 			Logger.i("DownloadManager", "cleared all downloads")
 		}
 	}

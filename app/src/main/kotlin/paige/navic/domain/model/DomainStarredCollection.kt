@@ -17,4 +17,8 @@ data class DomainStarredCollection(
 	override val duration: Duration?,
 	override val songCount: Int,
 	override val songs: List<DomainSong>
-) : DomainSongCollection
+) : DomainSongCollection {
+	companion object {
+		const val STARRED_COLLECTION_ID = "starred-songs"
+	}
+}

@@ -63,6 +63,9 @@ interface SongDao {
 	@Query("SELECT * FROM SongEntity WHERE starredAt IS NOT NULL")
 	fun getStarredSongs(): Flow<List<SongEntity>>
 
+	@Query("SELECT * FROM SongEntity WHERE starredAt IS NOT NULL")
+	suspend fun getStarredSongsList(): List<SongEntity>
+
 	@Query("SELECT belongsToAlbumId FROM SongEntity WHERE playCount > 0 GROUP BY belongsToAlbumId ORDER BY SUM(playCount) DESC LIMIT :limit")
 	fun getTopAlbumIds(limit: Int): Flow<List<String>>
 

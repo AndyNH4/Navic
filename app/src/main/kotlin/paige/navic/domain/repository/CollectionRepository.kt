@@ -16,6 +16,7 @@ import paige.navic.data.database.dao.PlaylistDao
 import paige.navic.data.database.dao.SongDao
 import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
+import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.model.DomainAlbum
 import paige.navic.domain.model.DomainFolderCollection
@@ -30,7 +31,8 @@ class CollectionRepository(
 	private val playlistDao: PlaylistDao,
 	private val songDao: SongDao,
 	private val dbRepository: DbRepository,
-	private val sessionManager: SessionManager
+	private val sessionManager: SessionManager,
+	private val downloadManager: DownloadManager
 ) {
 	suspend fun getLocalData(collectionId: String): DomainSongCollection {
 		return albumDao.getAlbumById(collectionId)?.toDomainModel()
@@ -45,6 +47,7 @@ class CollectionRepository(
 				songDao.updateSongsByAlbumId(album.id, album.songs.map { it.toEntity() })
 				albumDao.insertAlbum(album.toEntity())
 				albumDao.getAlbumById(album.id)!!.toDomainModel()
+				downloadManager.syncPinnedCollectionDownload(album.id)
 			}
 
 			is DomainPlaylist -> {

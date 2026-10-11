@@ -38,6 +38,7 @@ import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
 import paige.navic.domain.manager.NotificationIds
 import paige.navic.domain.manager.NotificationManager
+import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.model.DomainArtist
 import paige.navic.util.Logger
@@ -56,6 +57,7 @@ class DbRepository(
 	private val syncDao: SyncActionDao,
 	private val sessionManager: SessionManager,
 	private val notificationManager: NotificationManager,
+	private val downloadManager: DownloadManager,
 	private val context: Context
 ) {
 	private val concurrentRequestLimit = Semaphore(20)
@@ -156,6 +158,8 @@ class DbRepository(
 
 				albumDao.deleteObsoleteAlbums(validAlbumIds)
 				songDao.deleteObsoleteSongs(validSongIds)
+
+				downloadManager.syncPinnedCollectionDownloads()
 
 				progressCallback(1.0f, R.string.info_syncing_finished)
 			} finally {
@@ -329,6 +333,7 @@ class DbRepository(
 		}
 
 		Logger.i("DbRepository", "- Playlist [$playlistId] synced: ${songEntities.size} songs")
+		downloadManager.syncPinnedCollectionDownload(playlistId)
 		songIds
 	}
 

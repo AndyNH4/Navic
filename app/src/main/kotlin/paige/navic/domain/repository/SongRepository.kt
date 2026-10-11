@@ -20,6 +20,7 @@ import paige.navic.data.database.entity.SyncActionType
 import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
 import paige.navic.domain.manager.SyncManager
+import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.model.DomainFilter
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.DomainSongListType
@@ -32,7 +33,8 @@ class SongRepository(
 	private val albumDao: AlbumDao,
 	private val downloadDao: DownloadDao,
 	private val dbRepository: DbRepository,
-	private val syncManager: SyncManager
+	private val syncManager: SyncManager,
+	private val downloadManager: DownloadManager
 ) {
 	suspend fun getAllSongs(): List<DomainSong> {
 		return songDao.getAllSongs().map { it.toDomainModel() }
@@ -117,6 +119,7 @@ class SongRepository(
 		)
 		songDao.insertSong(starredEntity)
 		syncManager.enqueueAction(SyncActionType.STAR, song.id)
+		downloadManager.downloadStarredSongIfPinned(song)
 	}
 
 	suspend fun unstarSong(song: DomainSong) {
