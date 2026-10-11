@@ -27,6 +27,7 @@ import paige.navic.icons.Icons
 import paige.navic.icons.outlined.ArrowBack
 import paige.navic.icons.outlined.Check
 import paige.navic.icons.outlined.KeyboardArrowDown
+import paige.navic.icons.outlined.Refresh
 import paige.navic.icons.outlined.Share
 import paige.navic.ui.component.layout.TopBarButton
 import paige.navic.ui.component.toolbar.SheetToolbar
@@ -35,6 +36,7 @@ import paige.navic.ui.component.toolbar.SheetToolbar
 fun LyricsScreenToolbar(
 	onDismissRequest: () -> Unit,
 	onShare: () -> Unit,
+	onRefresh: () -> Unit,
 	isSelecting: Boolean,
 	toggleIsSelecting: () -> Unit,
 	windowInsets: WindowInsets,
@@ -67,6 +69,16 @@ fun LyricsScreenToolbar(
 			)
 		},
 		actions = {
+			TopBarButton(
+				enabled = !isSelecting,
+				onClick = dropUnlessResumed { onRefresh() }
+			) {
+				Icon(
+					imageVector = Icons.Outlined.Refresh,
+					contentDescription = stringResource(R.string.action_refresh),
+					modifier = Modifier.size(26.dp)
+				)
+			}
 			TopBarButton(
 				enabled = !isSelecting || selectedIndices.isNotEmpty(),
 				onClick = {

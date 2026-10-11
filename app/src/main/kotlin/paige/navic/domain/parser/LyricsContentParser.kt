@@ -269,44 +269,69 @@ object LyricsContentParser {
 		}
 	}
 
-	// translation lines share their timestamp with the original line; grouping by timestamp
-	// keeps pairing independent of line order (Navidrome sorting is not guaranteed stable)
+	// translation lines share their timestamp with the original line. Pairing is
+	// order-independent (Navidrome sorting is not guaranteed stable) and tolerant:
+	// exact timestamp first, then nearest line within a small window for
+	// hand-edited files whose timestamps drifted by a few milliseconds.
+	// Untimed [tr] lines attach to the nearest preceding untimed main line.
 	private fun pairTranslations(sorted: List<RawLine>): List<LyricsLine> {
-		val translationByTime = HashMap<Duration, String>()
-		val mainTimes = HashSet<Duration>()
-		for (line in sorted) {
-			val time = line.time ?: continue
-			if (line.isTranslation) {
-				if (line.text.isNotEmpty()) translationByTime.putIfAbsent(time, line.text)
-			} else {
-				mainTimes += time
-			}
-		}
+		val translationIndexes = sorted.indices.filter {
+			sorted[it].isTranslation && sorted[it].text.isNotEmpty()
+		}.toMutableList()
+		val claimed = mutableSetOf<Int>()
 
 		val result = mutableListOf<LyricsLine>()
-		for (line in sorted) {
-			if (line.isTranslation) {
-				val time = line.time
-				if (time == null && line.text.isNotEmpty()) {
-					val previous = result.lastOrNull()
-					if (previous != null && previous.time == null && previous.translation == null) {
-						result[result.lastIndex] = previous.copy(translation = line.text)
-						continue
-					}
+		for ((index, line) in sorted.withIndex()) {
+			if (line.isTranslation) continue // consumed below via pairing
+			var translation: String? = null
+			val time = line.time
+			if (time != null) {
+				// exact timestamp first
+				var partnerIdx = translationIndexes.firstOrNull {
+					it !in claimed && sorted[it].time == time
 				}
-				// orphan translation without a partner line: keep it as a plain line
-				val isOrphan = time == null || time !in mainTimes
-				if (isOrphan && line.text.isNotEmpty()) {
-					result += LyricsLine(time = line.time, text = line.text, words = line.words)
+				if (partnerIdx == null) {
+					// nearest free translation within the tolerance window
+					partnerIdx = translationIndexes
+						.filter { it !in claimed && sorted[it].time != null }
+						.minByOrNull {
+							kotlin.math.abs((sorted[it].time!! - time).inWholeMilliseconds)
+						}
+						?.takeIf {
+							kotlin.math.abs((sorted[it].time!! - time).inWholeMilliseconds) <= 500L
+						}
 				}
-				continue
+				if (partnerIdx != null) {
+					claimed += partnerIdx
+					translation = sorted[partnerIdx].text
+				}
+			} else {
+				// untimed main line: take the first still-free untimed translation
+				val partnerIdx = translationIndexes.firstOrNull {
+					it !in claimed && sorted[it].time == null
+				}
+				if (partnerIdx != null) {
+					claimed += partnerIdx
+					translation = sorted[partnerIdx].text
+				}
 			}
 			result += LyricsLine(
 				time = line.time,
 				text = line.text,
 				words = line.words,
-				translation = line.time?.let(translationByTime::get)
+				translation = translation
 			)
+		}
+
+		// leftover translations only surface as plain lines when there is nothing
+		// timestamped to pair with at all (keeps content visible instead of lost)
+		if (result.none { it.time != null }) {
+			for (i in translationIndexes) {
+				if (i !in claimed) {
+					val t = sorted[i]
+					result += LyricsLine(time = t.time, text = t.text, words = t.words)
+				}
+			}
 		}
 		return result
 	}

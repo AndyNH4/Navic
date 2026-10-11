@@ -117,6 +117,7 @@ fun LyricsScreen(
 			LyricsScreenToolbar(
 				onDismissRequest = { animateToDismiss() },
 				onShare = { shareSheetOpen = true },
+				onRefresh = { viewModel.refreshResults() },
 				isSelecting = isSelecting,
 				toggleIsSelecting = toggleIsSelecting,
 				windowInsets = windowInsets,

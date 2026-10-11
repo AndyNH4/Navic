@@ -71,8 +71,11 @@ class LyricsRepository(
 		}
 	}
 
-	suspend fun fetchLyrics(song: DomainSong): LyricsResult? {
+	suspend fun fetchLyrics(song: DomainSong, forceRefresh: Boolean = false): LyricsResult? {
 		try {
+			if (forceRefresh) {
+				lyricDao.deleteLyrics(song.id)
+			}
 			val cached = lyricDao.getLyrics(song.id)
 			if (cached != null) {
 				val parsed = LyricsContentParser.parse(cached.rawContent)

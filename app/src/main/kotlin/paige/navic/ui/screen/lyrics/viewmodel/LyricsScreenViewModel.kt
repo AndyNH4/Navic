@@ -36,7 +36,7 @@ class LyricsScreenViewModel(
 			lyricsState.value = UiState.Loading()
 			try {
 				lyricsState.value = UiState.Success(
-					repository.fetchLyrics(song)
+					repository.fetchLyrics(song, forceRefresh = true)
 				)
 			} catch (e: Exception) {
 				lyricsState.value = UiState.Error(e)

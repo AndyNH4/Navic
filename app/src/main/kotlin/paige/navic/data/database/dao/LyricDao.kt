@@ -22,6 +22,9 @@ interface LyricDao {
 	@Insert(onConflict = OnConflictStrategy.REPLACE)
 	suspend fun insertLyrics(lyrics: LyricEntity)
 
+	@Query("DELETE FROM LyricEntity WHERE songId = :songId")
+	suspend fun deleteLyrics(songId: String)
+
 	@Query("DELETE FROM LyricEntity")
 	suspend fun clearAllLyrics()
 }
