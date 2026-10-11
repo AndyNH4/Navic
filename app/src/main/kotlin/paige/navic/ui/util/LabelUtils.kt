@@ -65,6 +65,8 @@ fun DomainSongListType.label() = when (this) {
 	DomainSongListType.Random -> stringResource(R.string.option_sort_random)
 	DomainSongListType.Rating -> stringResource(R.string.option_sort_rating)
 	DomainSongListType.Year -> stringResource(R.string.option_sort_by_year)
+	DomainSongListType.Alphabetical -> stringResource(R.string.option_sort_title)
+	DomainSongListType.RecentlyStarred -> stringResource(R.string.option_sort_recently_starred)
 }
 
 fun PaletteStyle.label(): String = when (this) {

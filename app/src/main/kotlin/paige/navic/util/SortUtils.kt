@@ -31,6 +31,8 @@ fun ImmutableList<DomainSong>.sortedByListType(
 
 		DomainSongListType.Rating -> sortedByDescending { it.userRating ?: 0 }
 		DomainSongListType.Year -> sortedByDescending { it.year }
+		DomainSongListType.Alphabetical -> sortedBy { it.title.lowercase() }
+		DomainSongListType.RecentlyStarred -> sortedByDescending { it.starredAt }
 
 		is DomainSongListType.ByArtist -> filter {
 			it.artistId == listType.artistId

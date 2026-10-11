@@ -34,6 +34,14 @@ sealed class DomainSongListType {
 
 	@Serializable
 	@Immutable
+	data object Alphabetical : DomainSongListType()
+
+	@Serializable
+	@Immutable
+	data object RecentlyStarred : DomainSongListType()
+
+	@Serializable
+	@Immutable
 	data class ByGenre(val genre: String) : DomainSongListType()
 
 	@Serializable

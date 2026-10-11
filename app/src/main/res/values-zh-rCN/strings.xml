@@ -57,6 +57,8 @@
     <string name="option_lyrics_autoscroll">歌词自动滚动</string>
     <string name="option_lyrics_beat_by_beat">逐拍歌词</string>
     <string name="option_sort_random">随机</string>
+    <string name="option_sort_title">标题</string>
+    <string name="option_sort_recently_starred">最近收藏</string>
     <string name="option_sort_newest">最近添加</string>
     <string name="option_sort_frequent">最常播放</string>
     <string name="option_sort_recent">最近播放</string>

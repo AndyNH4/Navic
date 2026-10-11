@@ -298,6 +298,7 @@ fun LyricsScreenContent(
 							text = translation,
 							fontSize = 18.sp,
 							fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
+							style = MaterialTheme.typography.titleMedium,
 							color = MaterialTheme.colorScheme.onSurfaceVariant
 								.copy(alpha = translationAlpha),
 							modifier = Modifier

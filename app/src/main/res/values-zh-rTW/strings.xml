@@ -36,6 +36,8 @@
     <string name="option_account_username">使用者名稱</string>
     <string name="option_account_password">密碼</string>
     <string name="option_sort_random">隨機</string>
+    <string name="option_sort_title">標題</string>
+    <string name="option_sort_recently_starred">最近收藏</string>
     <string name="option_sort_year">年份</string>
     <string name="option_sort_ascending">升冪</string>
     <string name="option_sort_descending">降冪</string>
