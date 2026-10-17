@@ -65,16 +65,18 @@ fun ArtistListScreenListItem(
 				)
 			},
 			content = { MarqueeText(artist.name) },
-			supportingContent = {
-				MarqueeText(
-					buildString {
-						append(pluralStringResource(
+			supportingContent = if (artist.albumCount > 0) {
+				{
+					MarqueeText(
+						pluralStringResource(
 							R.plurals.count_albums,
 							artist.albumCount,
 							artist.albumCount
-						))
-					}
-				)
+						)
+					)
+				}
+			} else {
+				null
 			},
 			onClick = dropUnlessResumed {
 				scope.launch {

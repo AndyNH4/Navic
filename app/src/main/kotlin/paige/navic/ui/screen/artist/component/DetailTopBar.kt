@@ -43,6 +43,10 @@ fun ArtistDetailScreenTopBar(
 	artistState: UiState<ArtistState>,
 	starred: Boolean? = null,
 	onSetStarred: ((Boolean) -> Unit)? = null,
+	onMergeArtists: (() -> Unit)? = null,
+	onSetDisplayName: (() -> Unit)? = null,
+	onRemoveFromGroup: (() -> Unit)? = null,
+	onDisbandGroup: (() -> Unit)? = null
 ) {
 	val state = (artistState as? UiState.Success)?.data
 	val alpha by animateFloatAsState(
@@ -94,7 +98,11 @@ fun ArtistDetailScreenTopBar(
 								playlistDialogShown = true
 							},
 							starred = starred,
-							onSetStarred = onSetStarred
+							onSetStarred = onSetStarred,
+							onMergeArtists = onMergeArtists,
+							onSetDisplayName = onSetDisplayName,
+							onRemoveFromGroup = onRemoveFromGroup,
+							onDisbandGroup = onDisbandGroup
 						)
 					}
 				}

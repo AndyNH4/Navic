@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import paige.navic.data.database.entity.SyncActionType
+import paige.navic.data.network.SubsonicScrobbleApi
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,7 +27,7 @@ class ScrobbleManager(
 	private val playerSource: ScrobblePlayerSource,
 	private val connectivityManager: ConnectivityManager,
 	private val syncManager: SyncManager,
-	private val sessionManager: SessionManager,
+	private val subsonicScrobbleApi: SubsonicScrobbleApi,
 	private val scope: CoroutineScope,
 	private val preferenceManager: PreferenceManager,
 	private val playHistoryManager: PlayHistoryManager
@@ -105,9 +106,12 @@ class ScrobbleManager(
 			val currentTime = Clock.System.now()
 
 			if (connectivityManager.isOnline.value) {
-				try {
-					sessionManager.api.scrobble(songId, submission = true, time = currentTime)
-				} catch (_: Exception) {
+				val result = subsonicScrobbleApi.scrobble(
+					songId,
+					time = currentTime,
+					submission = true
+				)
+				if (result.isFailure) {
 					syncManager.enqueueAction(SyncActionType.SCROBBLE, songId, currentTime)
 				}
 			} else {
@@ -122,10 +126,7 @@ class ScrobbleManager(
 		if (!connectivityManager.isOnline.value) return
 
 		scope.launch(Dispatchers.IO) {
-			try {
-				sessionManager.api.scrobble(songId, submission = false)
-			} catch (_: Exception) {
-			}
+			subsonicScrobbleApi.scrobble(songId, time = null, submission = false)
 		}
 	}
 }

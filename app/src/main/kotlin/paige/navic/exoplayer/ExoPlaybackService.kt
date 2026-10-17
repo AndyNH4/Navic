@@ -21,13 +21,13 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import paige.navic.R
+import paige.navic.data.network.SubsonicScrobbleApi
 import paige.navic.domain.manager.AndroidScrobbleManager
 import paige.navic.domain.manager.CastManager
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.EqualizerManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.PlayHistoryManager
-import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.SyncManager
 import paige.navic.exoplayer.impl.ExoEqualizerManager
 
@@ -44,7 +44,7 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 	private val castManager: CastManager by inject()
 
 	private val syncManager: SyncManager by inject()
-	private val sessionManager: SessionManager by inject()
+	private val subsonicScrobbleApi: SubsonicScrobbleApi by inject()
 	private val preferenceManager: PreferenceManager by inject()
 	private val equalizerManager: EqualizerManager by inject()
 	private val playHistoryManager: PlayHistoryManager by inject()
@@ -82,7 +82,7 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 				serviceScope,
 				connectivityManager,
 				syncManager,
-				sessionManager,
+				subsonicScrobbleApi,
 				preferenceManager,
 				playHistoryManager
 			)

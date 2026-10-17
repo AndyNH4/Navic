@@ -43,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,13 +58,16 @@ import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import paige.navic.R
 import paige.navic.di.LocalBottomBarScrollManager
 import paige.navic.di.LocalNavStack
 import paige.navic.di.LocalSizeClass
+import paige.navic.domain.manager.PlayHistorySyncManager
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.model.DomainArtist
 import paige.navic.domain.model.settings.BottomBarVisibilityMode
 import paige.navic.icons.Icons
@@ -96,6 +100,9 @@ fun StatisticsScreen(
 	nested: Boolean = false
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
+	val playHistorySyncManager = koinInject<PlayHistorySyncManager>()
+	val snackBarManager = koinInject<SnackBarManager>()
+	val scope = rememberCoroutineScope()
 	val viewModel = koinViewModel<StatisticsViewModel>()
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val localStats by viewModel.localStats.collectAsStateWithLifecycle()
@@ -125,6 +132,21 @@ fun StatisticsScreen(
 				expanded = menuExpanded,
 				onDismissRequest = { menuExpanded = false }
 			) {
+				DropdownMenuItem(
+					text = { Text(stringResource(R.string.action_sync_server_play_history)) },
+					onClick = {
+						menuExpanded = false
+						scope.launch {
+							playHistorySyncManager.syncFromServer()
+								.onSuccess {
+									snackBarManager.notify(R.string.notice_server_play_history_synced, it)
+								}
+								.onFailure {
+									snackBarManager.notify(R.string.notice_server_play_history_sync_failed)
+								}
+						}
+					}
+				)
 				DropdownMenuItem(
 					text = { Text(stringResource(R.string.action_clear_statistics)) },
 					onClick = {

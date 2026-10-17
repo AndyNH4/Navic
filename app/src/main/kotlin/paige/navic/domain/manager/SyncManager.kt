@@ -24,6 +24,7 @@ import paige.navic.data.database.dao.AlbumDao
 import paige.navic.data.database.dao.SyncActionDao
 import paige.navic.data.database.entity.SyncActionEntity
 import paige.navic.data.database.entity.SyncActionType
+import paige.navic.data.network.SubsonicScrobbleApi
 import paige.navic.domain.repository.DbRepository
 import paige.navic.util.Logger
 import kotlin.time.Clock
@@ -43,7 +44,9 @@ class SyncManager(
 	private val albumDao: AlbumDao,
 	private val connectivityManager: ConnectivityManager,
 	private val sessionManager: SessionManager,
-	private val preferenceManager: PreferenceManager
+	private val preferenceManager: PreferenceManager,
+	private val subsonicScrobbleApi: SubsonicScrobbleApi,
+	private val playHistorySyncManager: PlayHistorySyncManager
 ) {
 	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 	private var syncJob: Job? = null
@@ -138,6 +141,14 @@ class SyncManager(
 					it.copy(isSyncing = false, message = R.string.info_status_idle)
 				}
 			}
+
+			playHistorySyncManager.syncFromServer()
+				.onSuccess { count ->
+					if (count > 0) {
+						Logger.i("SyncManager", "Imported $count server play history entries")
+					}
+				}
+				.onFailure { Logger.w("SyncManager", "Server play history sync failed", it) }
 		}
 	}
 
@@ -151,11 +162,11 @@ class SyncManager(
 					SyncActionType.STAR -> sessionManager.api.star(action.itemId)
 					SyncActionType.UNSTAR -> sessionManager.api.unstar(action.itemId)
 					SyncActionType.DELETE_PLAYLIST -> sessionManager.api.deletePlaylist(action.itemId)
-					SyncActionType.SCROBBLE -> sessionManager.api.scrobble(
+					SyncActionType.SCROBBLE -> subsonicScrobbleApi.scrobble(
 						action.itemId,
-						submission = true,
-						time = action.time // i'm sorry for you if this defaults to "now"
-					)
+						time = action.time,
+						submission = true
+					).getOrThrow()
 
 					SyncActionType.STAR_0 -> sessionManager.api.setRating(action.itemId, 0)
 					SyncActionType.STAR_1 -> sessionManager.api.setRating(action.itemId, 1)

@@ -39,7 +39,8 @@ fun ArtistEntity.toDomainModel() = DomainArtist(
 	lastFmUrl = this.lastFmUrl,
 	roles = this.roles,
 	biography = this.biography,
-	similarArtistIds = this.similarArtistIds
+	similarArtistIds = this.similarArtistIds,
+	isTrackArtist = this.isTrackArtist
 )
 
 fun DomainArtist.toEntity() = ArtistEntity(
@@ -55,5 +56,6 @@ fun DomainArtist.toEntity() = ArtistEntity(
 	lastFmUrl = this.lastFmUrl,
 	roles = this.roles,
 	biography = this.biography,
-	similarArtistIds = this.similarArtistIds
+	similarArtistIds = this.similarArtistIds,
+	isTrackArtist = this.isTrackArtist
 )

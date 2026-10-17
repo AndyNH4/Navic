@@ -56,6 +56,7 @@ fun SettingsConnectionOptionsScreen() {
 	val isLoggedIn by sessionManager.isLoggedIn.collectAsStateWithLifecycle()
 	val activeInstanceUrl by sessionManager.activeInstanceUrl.collectAsStateWithLifecycle()
 	val isUsingBackupUrl by sessionManager.isUsingBackupUrl.collectAsStateWithLifecycle()
+	val serverCapabilities by sessionManager.serverCapabilities.collectAsStateWithLifecycle()
 
 	var primaryUrlField by mutableStateOf(sessionManager.primaryUrl())
 	val primaryUrlHasErrors by derivedStateOf {
@@ -191,6 +192,48 @@ fun SettingsConnectionOptionsScreen() {
 								}
 							)
 						}
+					}
+				}
+				if (isLoggedIn) {
+					SettingsGroup {
+						SettingsToggleItem(
+							checked = preferenceManager.navidromeEnhancementEnabled,
+							onCheckedChange = { preferenceManager.navidromeEnhancementEnabled = it },
+							content = { Text(stringResource(R.string.option_navidrome_enhancement)) },
+							supportingContent = {
+								val serverType = serverCapabilities.serverType?.let {
+									if (it.equals("navidrome", ignoreCase = true)) "Navidrome" else it
+								}
+								val serverDescription = listOfNotNull(
+									serverType,
+									serverCapabilities.serverVersion
+								).joinToString(" ")
+								Text(
+									when {
+										serverDescription.isBlank() -> stringResource(
+											R.string.info_navidrome_enhancement_not_detected
+										)
+
+										serverCapabilities.navidromeNativeAvailable
+											&& preferenceManager.navidromeEnhancementEnabled -> stringResource(
+											R.string.info_navidrome_enhancement_enabled,
+											serverDescription
+										)
+
+										serverCapabilities.navidromeNativeAvailable -> stringResource(
+											R.string.info_navidrome_enhancement_disabled,
+											serverDescription
+										)
+
+										else -> stringResource(
+											R.string.info_navidrome_enhancement_unavailable,
+											serverDescription
+										)
+									}
+								)
+							},
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 1)
+						)
 					}
 				}
 				SettingsGroup {

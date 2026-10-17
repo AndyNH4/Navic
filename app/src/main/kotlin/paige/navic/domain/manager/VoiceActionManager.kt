@@ -46,6 +46,7 @@ sealed interface VoicePlayResolution {
 class VoiceActionManager(
 	private val searchRepository: SearchRepository,
 	private val collectionRepository: CollectionRepository,
+	private val artistGroupManager: ArtistGroupManager,
 	private val sessionManager: SessionManager,
 	connectivityManager: ConnectivityManager
 ) {
@@ -150,15 +151,24 @@ class VoiceActionManager(
 		return VoicePlayResolution.Play(collection.songs, album.name ?: albumName)
 	}
 
-	private fun resolveArtist(
+	private suspend fun resolveArtist(
 		request: VoicePlayRequest,
 		artists: List<DomainArtist>,
 		songs: List<DomainSong>
 	): VoicePlayResolution.Play? {
 		val artistName = request.artistName ?: request.mediaName ?: return null
-		val artist = artists.singleOrNull { it.name.equals(artistName, ignoreCase = true) }
-			?: return null
-		val artistSongs = songs.filter { it.matchesArtist(artist.name) }
+		val matches = mutableListOf<Pair<DomainArtist, List<String>>>()
+		artists.forEach { artist ->
+			val names = listOf(artist.name) + artistGroupManager.getGroupInfo(artist.id)
+				?.members?.map { it.name }.orEmpty()
+			if (names.any { it.equals(artistName, ignoreCase = true) }) {
+				matches += artist to names
+			}
+		}
+		val (artist, artistNames) = matches.singleOrNull() ?: return null
+		val artistSongs = songs.filter { song ->
+			artistNames.any { song.matchesArtist(it) }
+		}
 		if (artistSongs.isEmpty()) return null
 		return VoicePlayResolution.Play(artistSongs, artist.name)
 	}

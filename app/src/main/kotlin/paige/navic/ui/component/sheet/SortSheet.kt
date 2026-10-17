@@ -58,7 +58,8 @@ fun <T> SortSheet(
 	onSetViewMode: ((ListViewMode) -> Unit)? = null,
 	selectedFilters: Set<DomainFilter> = emptySet(),
 	onToggleFilter: ((DomainFilter) -> Unit)? = null,
-	onDismissRequest: () -> Unit
+	onDismissRequest: () -> Unit,
+	additionalContent: (@Composable () -> Unit)? = null
 ) {
 	ModalBottomSheet(
 		onDismissRequest = onDismissRequest,
@@ -148,6 +149,8 @@ fun <T> SortSheet(
 					}
 				}
 			}
+
+			additionalContent?.invoke()
 
 			if (selectedViewMode != null && onSetViewMode != null) {
 				Text(

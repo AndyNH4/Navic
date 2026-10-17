@@ -36,6 +36,7 @@ import paige.navic.data.database.entity.PlaylistSongCrossRef
 import paige.navic.data.database.entity.SongEntity
 import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
+import paige.navic.domain.manager.ArtistGroupManager
 import paige.navic.domain.manager.NotificationIds
 import paige.navic.domain.manager.NotificationManager
 import paige.navic.domain.manager.DownloadManager
@@ -58,6 +59,7 @@ class DbRepository(
 	private val sessionManager: SessionManager,
 	private val notificationManager: NotificationManager,
 	private val downloadManager: DownloadManager,
+	private val artistGroupManager: ArtistGroupManager,
 	private val context: Context
 ) {
 	private val concurrentRequestLimit = Semaphore(20)
@@ -158,6 +160,10 @@ class DbRepository(
 
 				albumDao.deleteObsoleteAlbums(validAlbumIds)
 				songDao.deleteObsoleteSongs(validSongIds)
+
+				syncTrackArtists().onFailure { error ->
+					Logger.e("DbRepository", "could not sync track artists", error)
+				}
 
 				downloadManager.syncPinnedCollectionDownloads()
 
@@ -386,8 +392,36 @@ class DbRepository(
 			artistDao.insertArtists(chunk)
 		}
 		artistDao.deleteObsoleteArtists(artists.map { it.artistId }.toSet())
+		artistGroupManager.rebuildAutoGroups()
 
 		Logger.i("DbRepository", "- Artists Synced: ${artists.size} artists found")
+	}
+
+	suspend fun syncTrackArtists(): Result<Unit> = runDbOp {
+		val existingArtistIds = artistDao.getAllArtistIds().toSet()
+		val trackArtists = buildMap {
+			songDao.getAllSongs().forEach { song ->
+				(song.artists + song.albumArtists).forEach { artist ->
+					if (artist.id.isNotBlank() && artist.id !in existingArtistIds) {
+						put(
+							artist.id,
+							ArtistEntity(
+								artistId = artist.id,
+								name = artist.name,
+								albumCount = 0,
+								isTrackArtist = true
+							)
+						)
+					}
+				}
+			}
+		}.values.toList()
+
+		trackArtists.chunked(dbChunkSize).forEach { chunk ->
+			artistDao.insertArtistsIgnoringConflicts(chunk)
+		}
+
+		Logger.i("DbRepository", "- Track Artists Synced: ${trackArtists.size} new artists found")
 	}
 
 	suspend fun syncRadios(): Result<Unit> = runDbOp {
@@ -400,6 +434,10 @@ class DbRepository(
 		radioDao.deleteObsoleteRadios(entities.map { it.radioId }.toSet())
 
 		Logger.i("DbRepository", "- Radios Synced: ${entities.size} stations found")
+	}
+
+	suspend fun fetchArtist(artistId: String): Result<DomainArtist> = runDbOp {
+		sessionManager.api.getArtist(artistId).toEntity().toDomainModel()
 	}
 
 	suspend fun fetchArtistMetadata(artistId: String): Result<DomainArtist> = runDbOp {

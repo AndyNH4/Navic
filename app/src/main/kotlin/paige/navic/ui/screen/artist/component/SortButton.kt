@@ -8,6 +8,7 @@ package paige.navic.ui.screen.artist.component
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,13 +16,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import kotlinx.collections.immutable.persistentListOf
+import paige.navic.R
 import paige.navic.domain.model.DomainArtistListType
 import paige.navic.domain.model.DomainFilter
 import paige.navic.domain.model.settings.ListViewMode
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Sort
+import paige.navic.ui.component.common.SegmentedListItemDefaults
 import paige.navic.ui.component.layout.TopBarButton
 import paige.navic.ui.component.sheet.SortSheet
+import paige.navic.ui.screen.settings.component.SettingsToggleItem
 
 @Composable
 fun ArtistListScreenSortButton(
@@ -31,7 +35,9 @@ fun ArtistListScreenSortButton(
 	selectedViewMode: ListViewMode,
 	onSetViewMode: (ListViewMode) -> Unit,
 	selectedFilters: Set<DomainFilter>,
-	onToggleFilter: (DomainFilter) -> Unit
+	onToggleFilter: (DomainFilter) -> Unit,
+	showTrackArtists: Boolean,
+	onSetShowTrackArtists: (Boolean) -> Unit
 ) {
 	val entries = remember {
 		persistentListOf(
@@ -67,7 +73,15 @@ fun ArtistListScreenSortButton(
 			selectedViewMode = selectedViewMode,
 			onSetViewMode = onSetViewMode,
 			selectedFilters = selectedFilters,
-			onToggleFilter = onToggleFilter
+			onToggleFilter = onToggleFilter,
+			additionalContent = {
+				SettingsToggleItem(
+					content = { Text(stringResource(R.string.option_show_track_artists)) },
+					checked = showTrackArtists,
+					onCheckedChange = onSetShowTrackArtists,
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 1)
+				)
+			}
 		)
 	}
 }

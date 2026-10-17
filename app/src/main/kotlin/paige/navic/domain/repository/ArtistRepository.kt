@@ -19,6 +19,8 @@ import paige.navic.data.database.entity.DownloadStatus
 import paige.navic.data.database.entity.SyncActionType
 import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
+import paige.navic.domain.manager.ArtistGroupManager
+import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SyncManager
 import paige.navic.domain.model.DomainArtist
 import paige.navic.domain.model.DomainArtistListType
@@ -31,7 +33,9 @@ class ArtistRepository(
 	private val songDao: SongDao,
 	private val downloadDao: DownloadDao,
 	private val syncManager: SyncManager,
-	private val dbRepository: DbRepository
+	private val dbRepository: DbRepository,
+	private val preferenceManager: PreferenceManager,
+	private val artistGroupManager: ArtistGroupManager
 ) {
 	private suspend fun getLocalData(
 		listType: DomainArtistListType,
@@ -40,7 +44,10 @@ class ArtistRepository(
 		val artists = when (listType) {
 			DomainArtistListType.AlphabeticalByName -> artistDao.getArtistsAlphabeticalByName()
 			DomainArtistListType.Random -> artistDao.getArtistsRandom()
-		}.map { it.toDomainModel() }
+		}
+			.map { it.toDomainModel() }
+			.let { artistGroupManager.collapseArtists(it) }
+			.filter { preferenceManager.showTrackArtists || !it.isTrackArtist }
 
 		return artists.filter { artist ->
 			filters.all { filter ->
@@ -84,10 +91,15 @@ class ArtistRepository(
 		}
 	}.flowOn(Dispatchers.IO)
 
-	suspend fun isArtistStarred(artist: DomainArtist) = artistDao.isArtistStarred(artist.id)
+	suspend fun isArtistStarred(artist: DomainArtist): Boolean {
+		val memberIds = artistGroupManager.getGroupInfo(artist.id)
+			?.members?.map { it.artistId }
+			?: listOf(artist.id)
+		return memberIds.any { artistDao.isArtistStarred(it) }
+	}
 
 	suspend fun starArtist(artist: DomainArtist) {
-		val starredEntity = artist.toEntity().copy(
+		val starredEntity = (artistDao.getArtistById(artist.id) ?: artist.toEntity()).copy(
 			starredAt = Clock.System.now()
 		)
 		artistDao.insertArtist(starredEntity)
@@ -95,7 +107,7 @@ class ArtistRepository(
 	}
 
 	suspend fun unstarArtist(artist: DomainArtist) {
-		val unstarredEntity = artist.toEntity().copy(
+		val unstarredEntity = (artistDao.getArtistById(artist.id) ?: artist.toEntity()).copy(
 			starredAt = null
 		)
 		artistDao.insertArtist(unstarredEntity)

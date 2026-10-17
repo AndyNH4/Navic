@@ -43,9 +43,11 @@ import paige.navic.icons.Icons
 import paige.navic.icons.brand.Lastfm
 import paige.navic.icons.brand.Musicbrainz
 import paige.navic.icons.filled.Star
+import paige.navic.icons.outlined.Artist
 import paige.navic.icons.outlined.Close
 import paige.navic.icons.outlined.Delete
 import paige.navic.icons.outlined.Download
+import paige.navic.icons.outlined.Edit
 import paige.navic.icons.outlined.DownloadOff
 import paige.navic.icons.outlined.PlaylistAdd
 import paige.navic.icons.outlined.Queue
@@ -65,6 +67,10 @@ fun ArtistSheet(
 	onAddAllToPlaylist: (() -> Unit)? = null,
 	starred: Boolean? = null,
 	onSetStarred: ((Boolean) -> Unit)? = null,
+	onMergeArtists: (() -> Unit)? = null,
+	onSetDisplayName: (() -> Unit)? = null,
+	onRemoveFromGroup: (() -> Unit)? = null,
+	onDisbandGroup: (() -> Unit)? = null,
 	downloadStatus: DownloadStatus? = null,
 	onDownloadAll: (() -> Unit)? = null,
 	onCancelDownloadAll: (() -> Unit)? = null,
@@ -171,6 +177,58 @@ fun ArtistSheet(
 					leadingContent = { Icon(Icons.Outlined.PlaylistAdd, null) },
 					onClick = {
 						onAddAllToPlaylist()
+						onDismissRequest()
+					},
+					colors = colors,
+					contentPadding = contentPadding
+				)
+			}
+
+			if (onMergeArtists != null) {
+				ListItem(
+					content = { Text(stringResource(R.string.action_merge_artists)) },
+					leadingContent = { Icon(Icons.Outlined.Artist, null) },
+					onClick = {
+						onMergeArtists()
+						onDismissRequest()
+					},
+					colors = colors,
+					contentPadding = contentPadding
+				)
+			}
+
+			if (onSetDisplayName != null) {
+				ListItem(
+					content = { Text(stringResource(R.string.action_set_artist_display_name)) },
+					leadingContent = { Icon(Icons.Outlined.Edit, null) },
+					onClick = {
+						onSetDisplayName()
+						onDismissRequest()
+					},
+					colors = colors,
+					contentPadding = contentPadding
+				)
+			}
+
+			if (onRemoveFromGroup != null) {
+				ListItem(
+					content = { Text(stringResource(R.string.action_remove_from_artist_group)) },
+					leadingContent = { Icon(Icons.Outlined.Close, null) },
+					onClick = {
+						onRemoveFromGroup()
+						onDismissRequest()
+					},
+					colors = colors,
+					contentPadding = contentPadding
+				)
+			}
+
+			if (onDisbandGroup != null) {
+				ListItem(
+					content = { Text(stringResource(R.string.action_disband_artist_group)) },
+					leadingContent = { Icon(Icons.Outlined.Delete, null) },
+					onClick = {
+						onDisbandGroup()
 						onDismissRequest()
 					},
 					colors = colors,

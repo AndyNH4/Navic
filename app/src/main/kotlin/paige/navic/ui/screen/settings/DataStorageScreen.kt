@@ -57,6 +57,8 @@ import paige.navic.R
 import paige.navic.di.LocalNavStack
 import paige.navic.di.LocalSizeClass
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.SessionManager
+import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.model.settings.CoverArtQuality
 import paige.navic.domain.model.settings.OfflineMode
 import paige.navic.icons.Icons
@@ -71,6 +73,7 @@ import paige.navic.ui.screen.settings.component.SettingsChoiceItem
 import paige.navic.ui.screen.settings.component.SettingsGroup
 import paige.navic.ui.screen.settings.component.SettingsGroupDefaults
 import paige.navic.ui.screen.settings.component.SettingsNavItem
+import paige.navic.ui.screen.settings.component.SettingsToggleItem
 import paige.navic.ui.screen.settings.viewmodel.SettingsDataStorageViewModel
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -83,6 +86,8 @@ fun SettingsDataStorageScreen() {
 	val sizeClass = LocalSizeClass.current
 	val hideBack = sizeClass.widthSizeClass >= WindowWidthSizeClass.Medium
 	val preferenceManager = koinInject<PreferenceManager>()
+	val sessionManager = koinInject<SessionManager>()
+	val snackBarManager = koinInject<SnackBarManager>()
 	val scope = rememberCoroutineScope()
 	val imageLoader = koinInject<ImageLoader>()
 
@@ -90,6 +95,7 @@ fun SettingsDataStorageScreen() {
 	val pendingActionCount by viewModel.pendingActionCount.collectAsStateWithLifecycle()
 	val downloadCount by viewModel.downloadCount.collectAsStateWithLifecycle(0)
 	val downloadSize by viewModel.downloadSize.collectAsStateWithLifecycle(0L)
+	val serverCapabilities by sessionManager.serverCapabilities.collectAsStateWithLifecycle()
 
 	var showLibraryDownloadDialog by remember { mutableStateOf(false) }
 	val isDownloadingLibrary by viewModel.isDownloadingLibrary.collectAsStateWithLifecycle()
@@ -249,7 +255,7 @@ fun SettingsDataStorageScreen() {
 							}
 						},
 						trailingContent = offlineIcon,
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 3)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 4)
 					)
 
 					SegmentedListItem(
@@ -258,14 +264,29 @@ fun SettingsDataStorageScreen() {
 						content = { Text(stringResource(R.string.action_trigger_sync)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_trigger_sync)) },
 						trailingContent = offlineIcon,
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 3)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 4)
+					)
+
+					SettingsToggleItem(
+						checked = preferenceManager.syncServerPlayHistory,
+						onCheckedChange = { enabled ->
+							if (!serverCapabilities.navidromeNativeAvailable
+								|| !preferenceManager.navidromeEnhancementEnabled
+							) {
+								snackBarManager.notify(R.string.notice_navidrome_enhancement_unavailable)
+							} else {
+								preferenceManager.syncServerPlayHistory = enabled
+							}
+						},
+						content = { Text(stringResource(R.string.option_sync_server_play_history)) },
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
 					)
 
 					SegmentedListItem(
 						onClick = {},
 						content = { Text(stringResource(R.string.option_last_sync)) },
 						supportingContent = { Text(timeSinceLastSync()) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 3)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 4)
 					)
 				}
 

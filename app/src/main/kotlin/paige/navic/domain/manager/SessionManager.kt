@@ -20,6 +20,7 @@ import io.ktor.client.request.header
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -27,6 +28,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import paige.navic.R
+import paige.navic.data.network.ServerCapabilities
+import paige.navic.data.network.ServerCapabilityDetector
 import paige.navic.util.getDefaultEngineForPlatform
 import paige.navic.util.Logger
 import paige.navic.util.extractProxyConfigFromUrl
@@ -36,6 +39,10 @@ class SessionManager(
 	private val preferenceManager: PreferenceManager,
 	private val snackBarManager: SnackBarManager
 ) {
+	private val capabilityDetector = ServerCapabilityDetector(settings, preferenceManager)
+	private var capabilityDetectionJob: Job? = null
+
+	val serverCapabilities: StateFlow<ServerCapabilities> = capabilityDetector.capabilities
 
 	val isLoggedIn: StateFlow<Boolean>
 		field = MutableStateFlow(false)
@@ -59,7 +66,10 @@ class SessionManager(
 		isLoggedIn.value = settings.getStringOrNull("username") != null
 		if (isLoggedIn.value) {
 			getCachedUser()
-			scope.launch { checkAndFailover() }
+			scope.launch {
+				checkAndFailover()
+				refreshServerCapabilities()
+			}
 		}
 	}
 
@@ -157,9 +167,12 @@ class SessionManager(
 		activeInstanceUrl.value = if (usingBackup) backupUrl!! else instanceUrl
 		isUsingBackupUrl.value = usingBackup
 		isLoggedIn.value = true
+		refreshServerCapabilities()
 	}
 
 	fun logout() {
+		capabilityDetectionJob?.cancel()
+		capabilityDetector.clear()
 		settings["username"] = null
 		settings["password"] = null
 		isLoggedIn.value = false
@@ -168,6 +181,7 @@ class SessionManager(
 
 	fun refreshClient() {
 		api = createClient(instanceUrl = activeUrl())
+		refreshServerCapabilities()
 	}
 
 	fun setBackupUrl(url: String) {
@@ -234,6 +248,24 @@ class SessionManager(
 			if (nowUsingBackup) R.string.notice_switched_to_backup
 			else R.string.notice_switched_to_primary
 		)
+	}
+
+	private fun refreshServerCapabilities() {
+		val credentials = getCredentials() ?: return
+		val baseUrl = activeUrl()
+		if (baseUrl.isBlank()) return
+
+		capabilityDetectionJob?.cancel()
+		capabilityDetectionJob = scope.launch {
+			capabilityDetector.detect(baseUrl, credentials)
+		}
+	}
+
+	internal fun getCredentials(): Pair<String, String>? {
+		val username = settings.getString("username", "")
+		val password = settings.getString("password", "")
+		if (username.isBlank() || password.isBlank()) return null
+		return username to password
 	}
 
 	fun getCoverArtUrl(coverArtId: String) = api.getCoverArtUrl(

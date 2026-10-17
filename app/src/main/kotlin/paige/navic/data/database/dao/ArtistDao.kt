@@ -61,6 +61,9 @@ interface ArtistDao {
 	@Query("SELECT artistId FROM ArtistEntity")
 	suspend fun getAllArtistIds(): List<String>
 
+	@Query("SELECT artistId FROM ArtistEntity WHERE isTrackArtist = 0")
+	suspend fun getAllNonTrackArtistIds(): List<String>
+
 	@Query("SELECT * FROM ArtistEntity WHERE artistId IN (:ids)")
 	suspend fun getArtistsByIds(ids: List<String>): List<ArtistEntity>
 
@@ -78,7 +81,7 @@ interface ArtistDao {
 
 	@Transaction
 	suspend fun deleteObsoleteArtists(remoteIds: Set<String>) {
-		getAllArtistIds().forEach { localId ->
+		getAllNonTrackArtistIds().forEach { localId ->
 			if (localId !in remoteIds) {
 				Logger.w("ArtistDao", "artist $localId no longer exists remotely")
 				deleteArtist(localId)

@@ -10,10 +10,12 @@ import androidx.room3.RoomRawQuery
 import kotlinx.coroutines.CancellationException
 import paige.navic.data.database.dao.AlbumDao
 import paige.navic.data.database.dao.ArtistDao
+import paige.navic.data.database.dao.ArtistGroupDao
 import paige.navic.data.database.dao.PlaylistDao
 import paige.navic.data.database.dao.SongDao
 import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.data.database.mapper.toEntity
+import paige.navic.domain.manager.ArtistGroupManager
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.util.Logger
@@ -21,9 +23,11 @@ import paige.navic.util.Logger
 class SearchRepository(
 	private val albumDao: AlbumDao,
 	private val artistDao: ArtistDao,
+	private val artistGroupDao: ArtistGroupDao,
 	private val songDao: SongDao,
 	private val playlistDao: PlaylistDao,
 	private val sessionManager: SessionManager,
+	private val artistGroupManager: ArtistGroupManager,
 	connectivityManager: ConnectivityManager
 ) {
 	val isOnline = connectivityManager.isOnline
@@ -38,12 +42,14 @@ class SearchRepository(
 				songDao.insertSongsIgnoringConflicts(data.songs.map { it.toEntity() })
 
 				val albums = albumDao.getAlbumsByIds(data.albums.map { it.id })
-				val artists = artistDao.getArtistsByIds(data.artists.map { it.id })
+				val artists = artistGroupManager.collapseArtists(
+					artistDao.getArtistsByIds(data.artists.map { it.id }).map { it.toDomainModel() }
+				)
 				val songs = songDao.getSongsByIds(data.songs.map { it.id })
 				val localPlaylists = playlistDao.searchPlaylistsList(query)
 
 				(albums.map { it.toDomainModel() }
-					+ artists.map { it.toDomainModel() }
+					+ artists
 					+ songs.map { it.toDomainModel() }
 					+ localPlaylists.map { it.toDomainModel() })
 			} catch (e: Exception) {
@@ -71,11 +77,21 @@ class SearchRepository(
 			.take(MAX_LOCAL_RESULTS_PER_CATEGORY)
 			.map { it.toDomainModel() }
 
-		val localArtists = artistDao.searchArtistsFuzzy(
-			buildFuzzyQuery("ArtistEntity", listOf("name"), tokens)
-		).rankByMatch(tokens, query) { listOf(it.name) }
-			.take(MAX_LOCAL_RESULTS_PER_CATEGORY)
-			.map { it.toDomainModel() }
+		val matchingMembers = artistGroupDao.searchMembersFuzzy(
+			buildFuzzyQuery("ArtistGroupMemberEntity", listOf("name"), tokens)
+		)
+		val memberNamesByArtistId = matchingMembers.groupBy { it.artistId }
+			.mapValues { (_, members) -> members.map { it.name } }
+		val artistEntities = (
+			artistDao.searchArtistsFuzzy(
+				buildFuzzyQuery("ArtistEntity", listOf("name"), tokens)
+			) + artistDao.getArtistsByIds(matchingMembers.map { it.artistId })
+			).distinctBy { it.artistId }
+		val localArtists = artistEntities.rankByMatch(tokens, query) { artist ->
+			listOf(artist.name) + memberNamesByArtistId[artist.artistId].orEmpty()
+		}.let { artists ->
+			artistGroupManager.collapseArtists(artists.map { it.toDomainModel() })
+		}.take(MAX_LOCAL_RESULTS_PER_CATEGORY)
 
 		val localSongs = songDao.searchSongsFuzzy(
 			buildFuzzyQuery("SongEntity", listOf("title", "artistName", "albumTitle"), tokens)

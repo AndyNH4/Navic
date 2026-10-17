@@ -163,6 +163,15 @@ interface SongDao {
 	@Query("SELECT * FROM SongEntity WHERE artistId = :artistId")
 	suspend fun getSongsByArtistId(artistId: String): List<SongEntity>
 
+	@Query(
+		"""
+		SELECT * FROM SongEntity
+		WHERE artists IS NOT NULL
+			AND (';' || artists || ';') LIKE '%;' || :artistId || '^%'
+		"""
+	)
+	suspend fun getSongsByParticipant(artistId: String): List<SongEntity>
+
 	@Transaction
 	suspend fun updateSongsByAlbumId(albumId: String, remoteSongs: List<SongEntity>) {
 		val remoteIds = remoteSongs.map { it.songId }.toSet()

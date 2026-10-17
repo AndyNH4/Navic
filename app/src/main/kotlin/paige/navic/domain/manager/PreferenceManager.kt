@@ -66,6 +66,8 @@ class PreferenceManager(
 	var lyricsBlur by preference(false)
 	var lyricsBrightInactive by preference(false)
 	var enableScrobbling by preference(true)
+	var navidromeEnhancementEnabled by preference(true)
+	var syncServerPlayHistory by preference(true)
 	var scrobblePercentage by preference(.5f)
 	var minDurationToScrobble by preference(30f)
 	var replayGainMode by preference(ReplayGainMode.Off)
@@ -134,6 +136,7 @@ class PreferenceManager(
 	var songSortReversed by preference(false)
 
 	var artistSortType by preference(DomainArtistListType.AlphabeticalByName)
+	var showTrackArtists by preference(false)
 
 	var playlistSortType by preference(DomainPlaylistListType.Name)
 	var playlistSortReversed by preference(false)

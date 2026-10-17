@@ -93,7 +93,9 @@ fun ArtistListScreen(
 			selectedViewMode = selectedViewMode,
 			onSetViewMode = { preferenceManager.artistListViewMode = it },
 			selectedFilters = selectedFilters,
-			onToggleFilter = { viewModel.toggleFilter(it) }
+			onToggleFilter = { viewModel.toggleFilter(it) },
+			showTrackArtists = preferenceManager.showTrackArtists,
+			onSetShowTrackArtists = { viewModel.setShowTrackArtists(it) }
 		)
 	}
 
@@ -189,11 +191,15 @@ fun ArtistListScreenGridItem(
 			onLongClick = onSelect,
 			coverArtId = artist.coverArtId,
 			title = artist.name,
-			subtitle = pluralStringResource(
-				R.plurals.count_albums,
-				artist.albumCount,
-				artist.albumCount
-			),
+			subtitle = if (artist.albumCount > 0) {
+				pluralStringResource(
+					R.plurals.count_albums,
+					artist.albumCount,
+					artist.albumCount
+				)
+			} else {
+				null
+			},
 			id = artist.id,
 			tab = tab
 		)

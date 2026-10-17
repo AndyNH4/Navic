@@ -9,13 +9,14 @@ package paige.navic.domain.manager
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import kotlinx.coroutines.CoroutineScope
+import paige.navic.data.network.SubsonicScrobbleApi
 
 class AndroidScrobbleManager(
 	private val player: Player,
 	scope: CoroutineScope,
 	connectivityManager: ConnectivityManager,
 	syncManager: SyncManager,
-	sessionManager: SessionManager,
+	subsonicScrobbleApi: SubsonicScrobbleApi,
 	preferenceManager: PreferenceManager,
 	playHistoryManager: PlayHistoryManager
 ) : Player.Listener {
@@ -31,7 +32,7 @@ class AndroidScrobbleManager(
 			playerSource,
 			connectivityManager,
 			syncManager,
-			sessionManager,
+			subsonicScrobbleApi,
 			scope,
 			preferenceManager,
 			playHistoryManager

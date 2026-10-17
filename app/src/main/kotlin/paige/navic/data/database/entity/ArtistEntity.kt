@@ -24,5 +24,6 @@ data class ArtistEntity(
 	val lastFmUrl: String? = null,
 	val roles: List<String> = emptyList(),
 	val biography: String? = null,
-	val similarArtistIds: List<String> = emptyList()
+	val similarArtistIds: List<String> = emptyList(),
+	val isTrackArtist: Boolean = false
 )

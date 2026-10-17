@@ -8,6 +8,8 @@ package paige.navic.di
 
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import paige.navic.data.network.NavidromeApiClient
+import paige.navic.data.network.SubsonicScrobbleApi
 import paige.navic.domain.repository.AlbumRepository
 import paige.navic.domain.repository.ArtistRepository
 import paige.navic.domain.repository.AudioMuseRepository
@@ -42,4 +44,6 @@ val repositoryModule = module {
 	singleOf(::SongRepository)
 	singleOf(::AudioMuseRepository)
 	singleOf(::TunedInRepository)
+	singleOf(::NavidromeApiClient)
+	singleOf(::SubsonicScrobbleApi)
 }

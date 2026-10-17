@@ -98,7 +98,7 @@ class ArtistListViewModel(
 				} else {
 					repository.unstarArtist(artist)
 				}
-				starred.value = isStarred
+				starred.value = repository.isArtistStarred(artist)
 			}
 		}
 	}
@@ -128,6 +128,11 @@ class ArtistListViewModel(
 	fun setListType(newListType: DomainArtistListType, persist: Boolean = true) {
 		listType.value = newListType
 		if (persist) preferenceManager.artistSortType = newListType
+		refreshArtists(false)
+	}
+
+	fun setShowTrackArtists(show: Boolean) {
+		preferenceManager.showTrackArtists = show
 		refreshArtists(false)
 	}
 

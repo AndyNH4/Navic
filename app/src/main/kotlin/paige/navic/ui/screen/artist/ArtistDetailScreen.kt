@@ -93,6 +93,8 @@ import paige.navic.ui.screen.album.component.AlbumListScreenListItem
 import paige.navic.ui.screen.artist.component.ArtistActionButtons
 import paige.navic.ui.screen.artist.component.ArtistDetailScreenHeading
 import paige.navic.ui.screen.artist.component.ArtistDetailScreenTopBar
+import paige.navic.ui.screen.artist.dialog.ArtistDisplayNameDialog
+import paige.navic.ui.screen.artist.dialog.ArtistMergeDialog
 import paige.navic.ui.screen.artist.viewmodel.ArtistDetailViewModel
 import paige.navic.ui.screen.playlist.dialog.PlaylistUpdateDialog
 import paige.navic.ui.screen.share.dialog.ShareDialog
@@ -128,6 +130,7 @@ fun ArtistDetailScreen(
 	val layoutDirection = LocalLayoutDirection.current
 	val artistState by viewModel.artistState.collectAsStateWithLifecycle()
 	val starred by viewModel.starred.collectAsState()
+	val mergeCandidates by viewModel.mergeCandidates.collectAsStateWithLifecycle()
 	val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 	val allDownloads by viewModel.allDownloads.collectAsStateWithLifecycle()
 	val downloadStatus by viewModel.collectionDownloadStatus()
@@ -147,8 +150,11 @@ fun ArtistDetailScreen(
 	}
 
 	val gridState = rememberLazyGridState()
+	val participationGridState = rememberLazyGridState()
 
 	var showDownloadDialog by remember { mutableStateOf(false) }
+	var showMergeDialog by rememberSaveable { mutableStateOf(false) }
+	var showDisplayNameDialog by rememberSaveable { mutableStateOf(false) }
 
 	var shareId by remember { mutableStateOf<String?>(null) }
 	var shareExpiry by remember { mutableStateOf<Duration?>(null) }
@@ -172,6 +178,22 @@ fun ArtistDetailScreen(
 					artistState = artistState,
 					starred = starred,
 					onSetStarred = { viewModel.starArtist(it) },
+					onMergeArtists = { showMergeDialog = true },
+					onSetDisplayName = if (artistState.data?.group != null) {
+						{ showDisplayNameDialog = true }
+					} else {
+						null
+					},
+					onRemoveFromGroup = if (artistState.data?.group != null) {
+						{ viewModel.removeFromGroup() }
+					} else {
+						null
+					},
+					onDisbandGroup = if (artistState.data?.group != null) {
+						{ viewModel.disbandGroup() }
+					} else {
+						null
+					}
 				)
 			},
 			bottomBar = {
@@ -243,6 +265,23 @@ fun ArtistDetailScreen(
 								innerPadding = contentPadding,
 								scrolled = scrolled
 							)
+							val otherNames = state.groupMembers
+								.filter { it.artistId != state.artist.id }
+								.map { it.name }
+								.distinct()
+							if (otherNames.isNotEmpty()) {
+								Text(
+									text = stringResource(
+										R.string.info_merged_artist_names,
+										otherNames.joinToString()
+									),
+									modifier = Modifier
+										.fillMaxWidth()
+										.padding(horizontal = 20.dp),
+									style = MaterialTheme.typography.bodySmall,
+									color = MaterialTheme.colorScheme.onSurfaceVariant
+								)
+							}
 							ArtistActionButtons(
 								onPlay = { viewModel.playArtistAlbums(player) },
 								onPlayShuffled = { viewModel.playArtistAlbumsShuffled(player) },
@@ -280,85 +319,97 @@ fun ArtistDetailScreen(
 								verticalArrangement = Arrangement.spacedBy(12.dp),
 								horizontalAlignment = Alignment.CenterHorizontally
 							) {
-								state.topSongs.takeIf { state.topSongs.isNotEmpty() }
-									?.let { songs ->
-										Row(
-											modifier = Modifier
-												.heightIn(min = 32.dp)
-												.padding(top = 8.dp)
-												.padding(horizontal = 16.dp)
-												.fillMaxWidth(),
-											verticalAlignment = Alignment.CenterVertically,
-											horizontalArrangement = Arrangement.SpaceBetween
-										) {
-											Text(
-												stringResource(R.string.option_sort_frequent),
-												style = MaterialTheme.typography.titleMediumEmphasized,
-												fontWeight = FontWeight(600)
-											)
-											Text(
-												stringResource(R.string.action_see_all),
-												style = MaterialTheme.typography.labelLarge,
-												color = MaterialTheme.colorScheme.primary,
-												modifier = Modifier.clickable(onClick = dropUnlessResumed {
-													backStack.add(
-														Screen.SongList(
-															nested = true,
-															listType = DomainSongListType.ByArtist(state.artist.id)
+								val songSections = listOf(
+									Triple(R.string.option_sort_frequent, state.topSongs, gridState),
+									Triple(
+										R.string.title_appears_on,
+										state.participationSongs,
+										participationGridState
+									)
+								)
+								songSections.forEach { (titleRes, sectionSongs, sectionGridState) ->
+									sectionSongs.takeIf { it.isNotEmpty() }
+										?.let { songs ->
+											Row(
+												modifier = Modifier
+													.heightIn(min = 32.dp)
+													.padding(top = 8.dp)
+													.padding(horizontal = 16.dp)
+													.fillMaxWidth(),
+												verticalAlignment = Alignment.CenterVertically,
+												horizontalArrangement = Arrangement.SpaceBetween
+											) {
+												Text(
+													stringResource(titleRes),
+													style = MaterialTheme.typography.titleMediumEmphasized,
+													fontWeight = FontWeight(600)
+												)
+												Text(
+													stringResource(R.string.action_see_all),
+													style = MaterialTheme.typography.labelLarge,
+													color = MaterialTheme.colorScheme.primary,
+													modifier = Modifier.clickable(onClick = dropUnlessResumed {
+														backStack.add(
+															Screen.SongList(
+																nested = true,
+																listType = DomainSongListType.ByArtist(state.artist.id)
+															)
 														)
-													)
-												})
-											)
-										}
-										LazyHorizontalGrid(
-											rows = GridCells.Fixed(3),
-											state = gridState,
-											flingBehavior = rememberSnapFlingBehavior(lazyGridState = gridState),
-											modifier = Modifier.fillMaxWidth().height(250.dp)
-										) {
-											itemsIndexed(songs) { index, song ->
-												val download =
-													allDownloads.find { it.songId == song.id }
-												SongRow(
-													modifier = Modifier.weight(1f),
-													song = song,
-													selected = selection == song,
-													onClick = {
-														if (playerState.currentSong?.id != song.id) {
-															player.playNow(songs, index)
-														} else {
-															player.togglePlay()
-														}
-													},
-													onLongClick = {
-														viewModel.selectSong(song)
-													},
-													onDismissRequest = { viewModel.clearSelection() },
-													starredState = if (selection == song) selectedSongIsStarred else song.starredAt != null,
-													onAddStar = { viewModel.starSelectedSong() },
-													onRemoveStar = { viewModel.unstarSelectedSong() },
-													download = download,
-													onDownload = { viewModel.downloadSong(song) },
-													onCancelDownload = {
-														viewModel.cancelDownload(
-															song.id
-														)
-													},
-													onDeleteDownload = {
-														viewModel.deleteDownload(
-															song.id
-														)
-													},
-													onPlayNext = { player.playNextSingle(song) },
-													onAddToQueue = { player.addToQueueSingle(song) },
-													onShare = { shareId = song.id },
-													isOnline = isOnline,
-													rating = selectedSongRating,
-													onSetRating = { viewModel.rateSelectedSong(it) }
+													})
 												)
 											}
+											LazyHorizontalGrid(
+												rows = GridCells.Fixed(3),
+												state = sectionGridState,
+												flingBehavior = rememberSnapFlingBehavior(
+													lazyGridState = sectionGridState
+												),
+												modifier = Modifier.fillMaxWidth().height(250.dp)
+											) {
+												itemsIndexed(songs) { index, song ->
+													val download =
+														allDownloads.find { it.songId == song.id }
+													SongRow(
+														modifier = Modifier.weight(1f),
+														song = song,
+														selected = selection == song,
+														onClick = {
+															if (playerState.currentSong?.id != song.id) {
+																player.playNow(songs, index)
+															} else {
+																player.togglePlay()
+															}
+														},
+														onLongClick = {
+															viewModel.selectSong(song)
+														},
+														onDismissRequest = { viewModel.clearSelection() },
+														starredState = if (selection == song) selectedSongIsStarred else song.starredAt != null,
+														onAddStar = { viewModel.starSelectedSong() },
+														onRemoveStar = { viewModel.unstarSelectedSong() },
+														download = download,
+														onDownload = { viewModel.downloadSong(song) },
+														onCancelDownload = {
+															viewModel.cancelDownload(
+																song.id
+															)
+														},
+														onDeleteDownload = {
+															viewModel.deleteDownload(
+																song.id
+															)
+														},
+														onPlayNext = { player.playNextSingle(song) },
+														onAddToQueue = { player.addToQueueSingle(song) },
+														onShare = { shareId = song.id },
+														isOnline = isOnline,
+														rating = selectedSongRating,
+														onSetRating = { viewModel.rateSelectedSong(it) }
+													)
+												}
+											}
 										}
-									}
+								}
 								if (state.albums.isNotEmpty()) {
 									val albumList = remember(state.albums) {
 										state.albums.sortedByDescending { album -> album.playCount }.toImmutableList()
@@ -492,6 +543,31 @@ fun ArtistDetailScreen(
 					}
 				}
 			}
+		}
+
+		if (showMergeDialog) {
+			ArtistMergeDialog(
+				candidates = mergeCandidates,
+				onSearch = viewModel::searchMergeCandidates,
+				onDismissRequest = { showMergeDialog = false },
+				onMerge = {
+					viewModel.mergeWithArtist(it.id)
+					showMergeDialog = false
+				}
+			)
+		}
+
+		val currentArtistState = artistState.data
+		if (showDisplayNameDialog && currentArtistState?.group != null) {
+			ArtistDisplayNameDialog(
+				initialName = currentArtistState.group.preferredName ?: currentArtistState.artist.name,
+				candidateNames = currentArtistState.groupMembers.map { it.name },
+				onDismissRequest = { showDisplayNameDialog = false },
+				onConfirm = {
+					viewModel.setPreferredName(it)
+					showDisplayNameDialog = false
+				}
+			)
 		}
 
 		ShareDialog(

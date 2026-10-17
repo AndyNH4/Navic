@@ -13,7 +13,11 @@ import kotlin.time.Duration
 import kotlin.time.Instant
 
 @Entity(
-	indices = [Index(value = ["playedAt"]), Index(value = ["songId"])]
+	indices = [
+		Index(value = ["playedAt"]),
+		Index(value = ["songId"]),
+		Index(value = ["songId", "playedAt"], unique = true)
+	]
 )
 data class PlayEventEntity(
 	@PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -25,5 +29,6 @@ data class PlayEventEntity(
 	val albumTitle: String?,
 	val coverArtId: String?,
 	val duration: Duration,
-	val playedAt: Instant
+	val playedAt: Instant,
+	val serverId: Long? = null
 )
