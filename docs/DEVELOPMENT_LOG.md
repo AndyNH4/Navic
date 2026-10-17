@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-- 当前版本：**1.0.4 (versionCode 4)**，签名 release 包，应用内自动更新。
+- 当前版本：**1.0.4 (versionCode 5)**，签名 release 包，应用内自动更新。
 - 主分支：`main`（产品开发）；`master`（上游 Navic 同步基线）。
 - 应用身份：`com.andy.rezeener`，应用名 Rezeener，deep link `rezeener://`。
 - 代码基线：Navic（GPL-3.0）+ 自研功能，全部提交均有对应 commit 可回溯。
