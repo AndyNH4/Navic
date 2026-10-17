@@ -65,7 +65,9 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 - 每个任务结束必须 `./gradlew :app:assembleDebug` 验证 + 中文词条补齐 + 按功能拆 commit（英文 conventional commits）
 - 真机验证优先；无真机时至少做解析器/迁移等可本地自验的部分
 
-## 当前功能状态（截至 v1.0.3）
+## 当前功能状态（截至 v1.0.4）
+
+另见：[开发日志](docs/DEVELOPMENT_LOG.md)（逐项改动结果与遗留风险）。
 
 - **连接**：主备双 URL 故障转移、启动自动探测、服务器不可达自动离线/恢复、代理/自定义头/SSL
 - **播放**：双腿 crossfade（等功率）、均衡器（按会话双挂）、ReplayGain、变速、睡眠定时、FFmpeg 扩展（Linux 构建时）
