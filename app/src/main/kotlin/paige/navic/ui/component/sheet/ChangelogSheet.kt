@@ -6,7 +6,6 @@
 
 package paige.navic.ui.component.sheet
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,12 +17,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,97 +32,43 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.kyant.capsule.ContinuousCapsule
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
 import paige.navic.R
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.UpdateDownloadState
+import paige.navic.domain.manager.UpdateManager
 import paige.navic.ui.component.common.Markdown
 import paige.navic.ui.component.dialog.LinkConfirmationDialog
 import paige.navic.ui.theme.defaultFont
-import paige.navic.util.Logger
-
-@Serializable
-data class GitHubRelease(
-	@SerialName("tag_name") val tag: String,
-	@SerialName("html_url") val url: String,
-	@SerialName("body") val body: String
-)
-
-class ChangelogViewModel(
-	context: Context
-) : ViewModel() {
-	val release: StateFlow<GitHubRelease?>
-		field = MutableStateFlow(null)
-
-	private val updateClient = HttpClient {
-		install(ContentNegotiation) {
-			json(Json { ignoreUnknownKeys = true })
-		}
-	}
-
-	init {
-		checkForUpdates(
-			context.packageManager
-				.getPackageInfo(context.packageName, 0)
-				.versionName.toString()
-		)
-	}
-
-	fun checkForUpdates(currentVersion: String) {
-		viewModelScope.launch {
-			release.value = try {
-				val release: GitHubRelease =
-					updateClient.get("https://api.github.com/repos/AndyNH4/Navic/releases/latest")
-						.body()
-				val remoteVersion = release.tag
-					.filter { it.isDigit() }
-					.toIntOrNull() ?: return@launch
-				val localVersion = currentVersion
-					.filter { it.isDigit() }
-					.toIntOrNull() ?: return@launch
-				if (remoteVersion > localVersion || "$remoteVersion".length != "$localVersion".length)
-					release
-				else null
-			} catch (e: Exception) {
-				Logger.e("ChangelogViewModel", "couldn't check for updates", e)
-				null
-			}
-		}
-	}
-
-	fun clearRelease() {
-		release.value = null
-	}
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangelogSheet() {
+	val context = LocalContext.current
 	val preferenceManager = koinInject<PreferenceManager>()
-	val viewModel = koinViewModel<ChangelogViewModel>()
-	val release by viewModel.release.collectAsStateWithLifecycle()
+	val updateManager = koinInject<UpdateManager>()
+	val release by updateManager.release.collectAsStateWithLifecycle()
+	val downloadState by updateManager.downloadState.collectAsStateWithLifecycle()
 	var linkToOpen by rememberSaveable { mutableStateOf<String?>(null) }
+
+	LaunchedEffect(Unit) {
+		if (preferenceManager.checkForUpdates) {
+			updateManager.checkForUpdates(
+				context.packageManager
+					.getPackageInfo(context.packageName, 0)
+					.versionName.toString()
+			)
+		}
+	}
 
 	release?.let { release ->
 		ModalBottomSheet(
-			onDismissRequest = { viewModel.clearRelease() },
+			onDismissRequest = { updateManager.clearRelease() },
 			sheetState = rememberBottomSheetState(
 				initialValue = SheetValue.Hidden,
 				enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
@@ -164,29 +111,93 @@ fun ChangelogSheet() {
 				Spacer(Modifier.height(8.dp))
 				Spacer(Modifier.weight(1f))
 
-				Button(
-					onClick = { linkToOpen = release.url },
-					modifier = Modifier.fillMaxWidth(),
-					shape = ContinuousCapsule
-				) {
-					Text(
-						text = stringResource(R.string.action_update_app),
-						fontFamily = defaultFont(100)
-					)
-				}
+				when (val state = downloadState) {
+					UpdateDownloadState.Idle -> {
+						Button(
+							onClick = { updateManager.downloadAndInstall(release) },
+							modifier = Modifier.fillMaxWidth(),
+							shape = ContinuousCapsule
+						) {
+							Text(
+								text = stringResource(R.string.action_update_app),
+								fontFamily = defaultFont(100)
+							)
+						}
 
-				OutlinedButton(
-					onClick = {
-						viewModel.clearRelease()
-						preferenceManager.checkForUpdates = false
-					},
-					modifier = Modifier.fillMaxWidth(),
-					shape = ContinuousCapsule
-				) {
-					Text(
-						text = stringResource(R.string.action_dont_show_again),
-						fontFamily = defaultFont(100)
-					)
+						OutlinedButton(
+							onClick = {
+								updateManager.clearRelease()
+								preferenceManager.checkForUpdates = false
+							},
+							modifier = Modifier.fillMaxWidth(),
+							shape = ContinuousCapsule
+						) {
+							Text(
+								text = stringResource(R.string.action_dont_show_again),
+								fontFamily = defaultFont(100)
+							)
+						}
+					}
+
+					is UpdateDownloadState.Downloading -> {
+						if (state.progress >= 0f) {
+							LinearProgressIndicator(
+								progress = { state.progress.coerceIn(0f, 1f) },
+								modifier = Modifier.fillMaxWidth()
+							)
+						} else {
+							LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+						}
+						Text(
+							text = stringResource(R.string.info_downloading_update) +
+								if (state.progress >= 0f) {
+									" (${(state.progress * 100).toInt()}%)"
+								} else {
+									""
+								},
+							style = MaterialTheme.typography.bodyMedium,
+							modifier = Modifier.padding(vertical = 8.dp)
+						)
+						OutlinedButton(
+							onClick = { updateManager.cancelDownload() },
+							modifier = Modifier.fillMaxWidth(),
+							shape = ContinuousCapsule
+						) {
+							Text(
+								text = stringResource(R.string.action_cancel),
+								fontFamily = defaultFont(100)
+							)
+						}
+					}
+
+					UpdateDownloadState.Failed -> {
+						Text(
+							text = stringResource(R.string.info_download_failed),
+							style = MaterialTheme.typography.bodyMedium,
+							color = MaterialTheme.colorScheme.error,
+							modifier = Modifier.padding(vertical = 8.dp)
+						)
+						Button(
+							onClick = { updateManager.downloadAndInstall(release) },
+							modifier = Modifier.fillMaxWidth(),
+							shape = ContinuousCapsule
+						) {
+							Text(
+								text = stringResource(R.string.action_retry),
+								fontFamily = defaultFont(100)
+							)
+						}
+						OutlinedButton(
+							onClick = { linkToOpen = release.url },
+							modifier = Modifier.fillMaxWidth(),
+							shape = ContinuousCapsule
+						) {
+							Text(
+								text = stringResource(R.string.action_open_release_page),
+								fontFamily = defaultFont(100)
+							)
+						}
+					}
 				}
 			}
 		}

@@ -19,7 +19,6 @@ import paige.navic.domain.model.DomainSongListType
 import paige.navic.shared.AndroidMediaPlayerViewModel
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.component.dialog.DeletionViewModel
-import paige.navic.ui.component.sheet.ChangelogViewModel
 import paige.navic.ui.screen.album.viewmodel.AlbumListViewModel
 import paige.navic.ui.screen.artist.viewmodel.ArtistDetailViewModel
 import paige.navic.ui.screen.artist.viewmodel.ArtistListViewModel
@@ -77,9 +76,12 @@ val viewModelModule = module {
 			albumRepository = get(),
 			artistDao = get(),
 			albumDao = get(),
+			songDao = get(),
 			downloadManager = get(),
 			snackBarManager = get(),
-			connectivityManager = get()
+			artistGroupManager = get(),
+			connectivityManager = get(),
+			context = androidApplication()
 		)
 	}
 
@@ -172,7 +174,6 @@ val viewModelModule = module {
 	viewModelOf(::SettingsDataStorageViewModel)
 	viewModelOf(::SettingsDownloadedSongsViewModel)
 	viewModelOf(::SettingsImageCacheViewModel)
-	viewModelOf(::ChangelogViewModel)
 	viewModel { params ->
 		NowPlayingViewModel(
 			player = params.get(),

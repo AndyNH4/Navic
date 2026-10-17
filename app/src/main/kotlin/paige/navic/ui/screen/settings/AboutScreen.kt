@@ -31,6 +31,7 @@ import paige.navic.generated.BuildInfo
 import paige.navic.R
 import paige.navic.di.LocalSizeClass
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.UpdateManager
 import paige.navic.ui.component.common.SegmentedListItem
 import paige.navic.ui.component.common.SegmentedListItemDefaults
 import paige.navic.ui.component.dialog.LinkConfirmationDialog
@@ -114,12 +115,25 @@ fun SettingsAboutScreen() {
 
 			if (!BuildInfo.FDROID) {
 				SettingsGroup {
+					val updateManager = koinInject<UpdateManager>()
 					SettingsToggleItem(
 						content = { Text(stringResource(R.string.option_check_for_updates)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_check_for_updates)) },
 						checked = preferenceManager.checkForUpdates,
 						onCheckedChange = { preferenceManager.checkForUpdates = it },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 1)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 2)
+					)
+					SegmentedListItem(
+						onClick = {
+							updateManager.checkForUpdates(
+								context.packageManager
+									.getPackageInfo(context.packageName, 0)
+									.versionName.toString(),
+								manual = true
+							)
+						},
+						content = { Text(stringResource(R.string.action_check_now)) },
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 2)
 					)
 				}
 			}
