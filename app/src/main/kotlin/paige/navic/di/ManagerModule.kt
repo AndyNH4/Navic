@@ -57,6 +57,7 @@ val managerModule = module {
 	singleOf(::SleepTimerManager)
 	singleOf(::SnackBarManager)
 	singleOf(::StorageManager)
+	singleOf(::UpdateManager)
 	singleOf(::VoiceActionManager)
 	single(createdAtStart = true) {
 		SyncManager(get(), get(), get(), get(), get(), get(), get(), get()).apply {
