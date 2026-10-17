@@ -12,6 +12,9 @@ import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 import paige.navic.data.database.CacheDatabase
 import paige.navic.data.database.DownloadDatabase
+import paige.navic.data.database.MIGRATION_21_22
+import paige.navic.data.database.MIGRATION_22_23
+import paige.navic.data.database.MIGRATION_3_4
 
 val databaseModule = module {
 	single<CacheDatabase> {
@@ -21,6 +24,7 @@ val databaseModule = module {
 		Room
 			.databaseBuilder<CacheDatabase>(get(), dbPath)
 			.setDriver(BundledSQLiteDriver())
+			.addMigrations(MIGRATION_21_22, MIGRATION_22_23)
 			.fallbackToDestructiveMigration(true)
 			.build()
 	}
@@ -32,12 +36,14 @@ val databaseModule = module {
 		Room
 			.databaseBuilder<DownloadDatabase>(get(), dbPath)
 			.setDriver(BundledSQLiteDriver())
+			.addMigrations(MIGRATION_3_4)
 			.fallbackToDestructiveMigration(true)
 			.build()
 	}
 
 	single { get<CacheDatabase>().albumDao() }
 	single { get<CacheDatabase>().artistDao() }
+	single { get<CacheDatabase>().artistGroupDao() }
 	single { get<CacheDatabase>().genreDao() }
 	single { get<CacheDatabase>().lyricDao() }
 	single { get<CacheDatabase>().playEventDao() }
