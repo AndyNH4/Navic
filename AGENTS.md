@@ -65,7 +65,7 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 - 每个任务结束必须 `./gradlew :app:assembleDebug` 验证 + 中文词条补齐 + 按功能拆 commit（英文 conventional commits）
 - 真机验证优先；无真机时至少做解析器/迁移等可本地自验的部分
 
-## 当前功能状态（截至 v1.0.4）
+## 当前功能状态（截至 v1.0.4.1）
 
 另见：[开发日志](docs/DEVELOPMENT_LOG.md)（逐项改动结果与遗留风险）。
 

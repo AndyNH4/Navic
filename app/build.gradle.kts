@@ -114,8 +114,8 @@ android {
 		applicationId = "com.andy.rezeener"
 		minSdk = libs.versions.android.minSdk.get().toInt()
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
-		versionCode = 5
-		versionName = "1.0.4"
+		versionCode = 6
+		versionName = "1.0.4.1"
 		multiDexEnabled = true
 
 		ndk {
