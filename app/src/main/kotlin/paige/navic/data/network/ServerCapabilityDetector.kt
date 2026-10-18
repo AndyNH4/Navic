@@ -106,8 +106,8 @@ internal class ServerCapabilityDetector(
 		val match = VERSION_REGEX.matchEntire(version?.trim().orEmpty()) ?: return false
 		val major = match.groupValues[1].toIntOrNull() ?: return false
 		val minor = match.groupValues[2].toIntOrNull() ?: return false
-		val patch = match.groupValues[3].ifEmpty { "0" }.toIntOrNull() ?: return false
-		return major > 0 || major == 0 && (minor > 59 || minor == 59 && patch >= 0)
+		match.groupValues[3].ifEmpty { "0" }.toIntOrNull() ?: return false
+		return major > 0 || minor >= 59
 	}
 
 	private fun generateSalt(): String {
@@ -119,6 +119,6 @@ internal class ServerCapabilityDetector(
 	private companion object {
 		const val SERVER_TYPE_KEY = "detectedServerType"
 		const val SERVER_VERSION_KEY = "detectedServerVersion"
-		val VERSION_REGEX = Regex("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?(?:[-+].*)?$")
+		val VERSION_REGEX = Regex("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?(?:\\s*\\([^)]*\\))?(?:[-+].*)?$")
 	}
 }
