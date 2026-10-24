@@ -28,6 +28,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import paige.navic.R
+import paige.navic.di.LocalNavStack
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.model.DomainSong
 import paige.navic.shared.MediaPlayerViewModel
@@ -36,6 +37,7 @@ import paige.navic.ui.component.layout.NestedTopBar
 import paige.navic.ui.component.layout.PullToRefreshBox
 import paige.navic.ui.component.snackbar.ErrorSnackBar
 import paige.navic.ui.core.UiState
+import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screen.share.dialog.ShareDialog
 import paige.navic.ui.screen.song.component.songListScreenContent
 import paige.navic.ui.screen.song.viewmodel.SimilarSongsViewModel
@@ -52,6 +54,7 @@ fun SimilarSongsScreen(
 	)
 	val preferenceManager = koinInject<PreferenceManager>()
 	val player = koinInject<MediaPlayerViewModel>()
+	val backStack = LocalNavStack.current
 	val songsState by viewModel.songsState.collectAsStateWithLifecycle()
 	val selectedSong by viewModel.selectedSong.collectAsStateWithLifecycle()
 	val starred by viewModel.starred.collectAsStateWithLifecycle()
@@ -111,6 +114,9 @@ fun SimilarSongsScreen(
 					onPlaySong = { song ->
 						songsState.data?.let { songs ->
 							player.playNow(songs, songs.indexOf(song).coerceAtLeast(0))
+							if (Screen.NowPlaying !in backStack) {
+								backStack.add(Screen.NowPlaying)
+							}
 						}
 					},
 					onSetRating = { viewModel.rateSelectedSong(it) },
