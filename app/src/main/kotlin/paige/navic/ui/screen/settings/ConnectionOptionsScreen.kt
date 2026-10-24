@@ -99,19 +99,6 @@ fun SettingsConnectionOptionsScreen() {
 		}
 	}
 
-	var audioMuseUrlField by mutableStateOf(preferenceManager.audioMuseUrl)
-	val audioMuseUrlHasErrors by derivedStateOf {
-		audioMuseUrlField.isNotBlank() &&
-			!audioMuseUrlField.startsWith("https://") &&
-			!audioMuseUrlField.startsWith("http://")
-	}
-	val updateAudioMuseUrl: (String) -> Unit = { url ->
-		audioMuseUrlField = url
-		if (url.isBlank() || !audioMuseUrlHasErrors) {
-			preferenceManager.audioMuseUrl = url.trim().removeSuffix("/")
-		}
-	}
-
 	var sslNoopChecked by mutableStateOf(preferenceManager.dangerousSslNoopEnabled)
 	val updateSslNoop: (Boolean) -> Unit = { bool ->
 		sslNoopChecked = bool
@@ -248,24 +235,6 @@ fun SettingsConnectionOptionsScreen() {
 						supportingText = {
 							if (proxyUrlHasErrors) {
 								Text(stringResource(R.string.info_incorrect_proxy_url_format))
-							}
-						}
-					)
-				}
-				SettingsGroup {
-					OutlinedTextField(
-						modifier = Modifier.fillMaxWidth(),
-						singleLine = true,
-						value = audioMuseUrlField,
-						onValueChange = updateAudioMuseUrl,
-						isError = audioMuseUrlHasErrors,
-						label = { Text(stringResource(R.string.option_audiomuse_url)) },
-						placeholder = { Text(stringResource(R.string.info_audiomuse_url_placeholder)) },
-						supportingText = {
-							if (audioMuseUrlHasErrors) {
-								Text(stringResource(R.string.info_incorrect_backup_url_format))
-							} else {
-								Text(stringResource(R.string.info_audiomuse_url_description))
 							}
 						}
 					)

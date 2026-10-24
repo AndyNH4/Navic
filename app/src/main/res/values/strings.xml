@@ -603,9 +603,6 @@
 	<string name="info_folders_offline">Folder browsing requires an internet connection</string>
 	<string name="title_similar_songs">Similar songs</string>
 	<string name="action_similar_songs">Similar songs</string>
-	<string name="option_audiomuse_url">AudioMuse-AI URL</string>
-	<string name="info_audiomuse_url_placeholder">http://192.168.1.10:8000</string>
-	<string name="info_audiomuse_url_description">Optional. Enables sonic similarity recommendations from a self-hosted AudioMuse-AI server. Leave blank to disable.</string>
 	<string name="notice_voice_playing">Playing %1$s</string>
 	<string name="notice_voice_requires_login">Log in to use voice actions</string>
 	<string name="info_no_starred_songs">No starred songs</string>

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import paige.navic.domain.manager.PreferenceManager
@@ -28,7 +29,8 @@ import java.security.SecureRandom
 data class ServerCapabilities(
 	val serverType: String? = null,
 	val serverVersion: String? = null,
-	val navidromeNativeAvailable: Boolean = false
+	val navidromeNativeAvailable: Boolean = false,
+	val sonicSimilarityAvailable: Boolean = false
 )
 
 internal class ServerCapabilityDetector(
@@ -44,12 +46,13 @@ internal class ServerCapabilityDetector(
 	suspend fun detect(baseUrl: String, credentials: Pair<String, String>) {
 		val detected = try {
 			val (username, password) = credentials
-			val salt = generateSalt()
-			val response = client.get("${baseUrl.trimEnd('/')}/rest/ping.view") {
+			val normalizedBaseUrl = baseUrl.trimEnd('/')
+			val pingSalt = generateSalt()
+			val response = client.get("$normalizedBaseUrl/rest/ping.view") {
 				parameter("f", "json")
 				parameter("u", username)
-				parameter("t", md5Hex(password + salt))
-				parameter("s", salt)
+				parameter("t", md5Hex(password + pingSalt))
+				parameter("s", pingSalt)
 				parameter("v", "1.16.1")
 				parameter("c", "Navic")
 			}
@@ -64,9 +67,16 @@ internal class ServerCapabilityDetector(
 				throw Exception("Subsonic ping failed")
 			}
 
+			val sonicSimilarityAvailable = detectSonicSimilarity(
+				baseUrl = normalizedBaseUrl,
+				username = username,
+				password = password
+			)
+
 			createCapabilities(
 				serverType = root["type"]?.jsonPrimitive?.contentOrNull,
-				serverVersion = root["serverVersion"]?.jsonPrimitive?.contentOrNull
+				serverVersion = root["serverVersion"]?.jsonPrimitive?.contentOrNull,
+				sonicSimilarityAvailable = sonicSimilarityAvailable
 			)
 		} catch (e: CancellationException) {
 			throw e
@@ -78,27 +88,60 @@ internal class ServerCapabilityDetector(
 		capabilities.value = detected
 		settings[SERVER_TYPE_KEY] = detected.serverType
 		settings[SERVER_VERSION_KEY] = detected.serverVersion
+		settings[SONIC_SIMILARITY_KEY] = detected.sonicSimilarityAvailable
 	}
 
 	fun clear() {
 		capabilities.value = ServerCapabilities()
 		settings[SERVER_TYPE_KEY] = null
 		settings[SERVER_VERSION_KEY] = null
+		settings.remove(SONIC_SIMILARITY_KEY)
 	}
+
+	private suspend fun detectSonicSimilarity(
+		baseUrl: String,
+		username: String,
+		password: String
+	): Boolean = runCatching {
+		val salt = generateSalt()
+		val response = client.get("$baseUrl/rest/getOpenSubsonicExtensions.view") {
+			parameter("f", "json")
+			parameter("u", username)
+			parameter("t", md5Hex(password + salt))
+			parameter("s", salt)
+			parameter("v", "1.16.1")
+			parameter("c", "Navic")
+		}
+		if (!response.status.isSuccess()) return@runCatching false
+
+		json.parseToJsonElement(response.bodyAsText())
+			.jsonObject["subsonic-response"]?.jsonObject
+			?.get("openSubsonicExtensions")?.jsonArray
+			?.any {
+				it.jsonObject["name"]?.jsonPrimitive?.contentOrNull
+					.equals("sonicSimilarity", ignoreCase = true)
+			} == true
+	}.getOrDefault(false)
 
 	private fun loadPersistedCapabilities() = createCapabilities(
 		serverType = settings.getStringOrNull(SERVER_TYPE_KEY),
-		serverVersion = settings.getStringOrNull(SERVER_VERSION_KEY)
+		serverVersion = settings.getStringOrNull(SERVER_VERSION_KEY),
+		sonicSimilarityAvailable = settings.getBoolean(SONIC_SIMILARITY_KEY, false)
 	)
 
-	private fun createCapabilities(serverType: String?, serverVersion: String?): ServerCapabilities {
+	private fun createCapabilities(
+		serverType: String?,
+		serverVersion: String?,
+		sonicSimilarityAvailable: Boolean = false
+	): ServerCapabilities {
 		val cleanType = serverType?.trim()?.takeIf { it.isNotEmpty() }
 		val cleanVersion = serverVersion?.trim()?.takeIf { it.isNotEmpty() }
 		return ServerCapabilities(
 			serverType = cleanType,
 			serverVersion = cleanVersion,
 			navidromeNativeAvailable = cleanType.equals("navidrome", ignoreCase = true)
-				&& supportsNativeApi(cleanVersion)
+				&& supportsNativeApi(cleanVersion),
+			sonicSimilarityAvailable = sonicSimilarityAvailable
 		)
 	}
 
@@ -119,6 +162,7 @@ internal class ServerCapabilityDetector(
 	private companion object {
 		const val SERVER_TYPE_KEY = "detectedServerType"
 		const val SERVER_VERSION_KEY = "detectedServerVersion"
+		const val SONIC_SIMILARITY_KEY = "detectedSonicSimilarity"
 		val VERSION_REGEX = Regex("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?(?:\\s*\\([^)]*\\))?(?:[-+].*)?$")
 	}
 }

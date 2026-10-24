@@ -166,7 +166,7 @@ val viewModelModule = module {
 	viewModel { (songId: String) ->
 		SimilarSongsViewModel(
 			songId = songId,
-			audioMuseRepository = get(),
+			sonicSimilarityRepository = get(),
 			songRepository = get(),
 			downloadManager = get()
 		)

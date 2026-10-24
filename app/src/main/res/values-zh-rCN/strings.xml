@@ -560,9 +560,6 @@
     <string name="info_folders_offline">文件夹浏览需要联网</string>
     <string name="title_similar_songs">相似歌曲</string>
     <string name="action_similar_songs">相似歌曲</string>
-    <string name="option_audiomuse_url">AudioMuse-AI 地址</string>
-    <string name="info_audiomuse_url_placeholder">http://192.168.1.10:8000</string>
-    <string name="info_audiomuse_url_description">可选。启用来自自建 AudioMuse-AI 服务器的声波相似推荐，留空则关闭。</string>
     <string name="notice_voice_playing">正在播放 %1$s</string>
     <string name="notice_voice_requires_login">登录后才能使用语音操作</string>
     <string name="info_no_starred_songs">暂无最爱曲目</string>

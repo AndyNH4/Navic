@@ -18,13 +18,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.model.DomainSong
-import paige.navic.domain.repository.AudioMuseRepository
+import paige.navic.domain.repository.SonicSimilarityRepository
 import paige.navic.domain.repository.SongRepository
 import paige.navic.ui.core.UiState
 
 class SimilarSongsViewModel(
 	private val songId: String,
-	private val audioMuseRepository: AudioMuseRepository,
+	private val sonicSimilarityRepository: SonicSimilarityRepository,
 	private val songRepository: SongRepository,
 	private val downloadManager: DownloadManager
 ) : ViewModel() {
@@ -55,7 +55,7 @@ class SimilarSongsViewModel(
 		viewModelScope.launch {
 			songsState.value = UiState.Loading(data = songsState.value.data)
 			try {
-				val songs = audioMuseRepository.getSimilarSongs(songId).toImmutableList()
+				val songs = sonicSimilarityRepository.getSimilarSongs(songId).toImmutableList()
 				songsState.value = UiState.Success(data = songs)
 			} catch (error: Exception) {
 				songsState.value = UiState.Error(error = error, data = songsState.value.data)

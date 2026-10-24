@@ -111,6 +111,7 @@ fun SongSheet(
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val sessionManager = koinInject<SessionManager>()
+	val serverCapabilities by sessionManager.serverCapabilities.collectAsStateWithLifecycle()
 
 	val sleepTimerManager = koinInject<SleepTimerManager>()
 	val sleepTimerMode by sleepTimerManager.mode.collectAsStateWithLifecycle()
@@ -343,7 +344,7 @@ fun SongSheet(
 					)
 				}
 
-				if (preferenceManager.audioMuseUrl.isNotBlank()) {
+				if (serverCapabilities.sonicSimilarityAvailable) {
 					ListItem(
 						content = { Text(stringResource(R.string.action_similar_songs)) },
 						leadingContent = { Icon(Icons.Outlined.LibraryMusic, null) },

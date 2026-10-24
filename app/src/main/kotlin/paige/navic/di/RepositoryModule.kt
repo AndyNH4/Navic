@@ -12,7 +12,6 @@ import paige.navic.data.network.NavidromeApiClient
 import paige.navic.data.network.SubsonicScrobbleApi
 import paige.navic.domain.repository.AlbumRepository
 import paige.navic.domain.repository.ArtistRepository
-import paige.navic.domain.repository.AudioMuseRepository
 import paige.navic.domain.repository.BookmarkRepository
 import paige.navic.domain.repository.CollectionRepository
 import paige.navic.domain.repository.DbRepository
@@ -25,6 +24,7 @@ import paige.navic.domain.repository.RadioRepository
 import paige.navic.domain.repository.SearchRepository
 import paige.navic.domain.repository.ShareRepository
 import paige.navic.domain.repository.SongRepository
+import paige.navic.domain.repository.SonicSimilarityRepository
 import paige.navic.domain.repository.TunedInRepository
 
 val repositoryModule = module {
@@ -42,7 +42,7 @@ val repositoryModule = module {
 	singleOf(::SearchRepository)
 	singleOf(::ShareRepository)
 	singleOf(::SongRepository)
-	singleOf(::AudioMuseRepository)
+	singleOf(::SonicSimilarityRepository)
 	singleOf(::TunedInRepository)
 	singleOf(::NavidromeApiClient)
 	singleOf(::SubsonicScrobbleApi)
