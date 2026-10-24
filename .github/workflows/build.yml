@@ -51,7 +51,7 @@ jobs:
 
       - name: Build with Gradle (release)
         id: build_release
-        if: github.event_name == 'push' && env.SIGNING_KEY_ALIAS
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -136,7 +136,13 @@ jobs:
         run: |
           shopt -s nullglob globstar
 
-          gh release create "$GITHUB_REF_NAME" **/*.apk \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "$GITHUB_REF_NAME" \
-            --draft --generate-notes
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" **/*.apk \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" **/*.apk \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$GITHUB_REF_NAME" \
+              --draft --generate-notes
+          fi
