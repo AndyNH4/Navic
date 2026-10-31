@@ -30,6 +30,7 @@ import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.PlayHistoryManager
 import paige.navic.domain.manager.SyncManager
 import paige.navic.exoplayer.impl.ExoEqualizerManager
+import paige.navic.widget.state.WidgetStatePublisher
 
 @UnstableApi
 class ExoPlaybackService : MediaSessionService(), KoinComponent {
@@ -48,6 +49,7 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 	private val preferenceManager: PreferenceManager by inject()
 	private val equalizerManager: EqualizerManager by inject()
 	private val playHistoryManager: PlayHistoryManager by inject()
+	private val widgetStatePublisher: WidgetStatePublisher by inject()
 
 	private lateinit var exoEqualizerManager: ExoEqualizerManager
 	private lateinit var legObserver: (ExoPlayer) -> Unit
@@ -66,6 +68,7 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 		legObserver = { leg -> exoEqualizerManager.attachLeg(leg) }
 		stateHolder.addLegObserver(legObserver)
 		stateHolder.initState()
+		widgetStatePublisher.start(stateHolder.mediaSession.player)
 		// take over an ongoing cast session that started before the service
 		castManager.onPlaybackServiceReady()
 
@@ -110,6 +113,7 @@ class ExoPlaybackService : MediaSessionService(), KoinComponent {
 		scrobbleManager.release()
 		serviceScope.cancel()
 		stopForeground(STOP_FOREGROUND_REMOVE)
+		widgetStatePublisher.stop()
 		stateHolder.destroySession()
 		super.onDestroy()
 		stopSelf()

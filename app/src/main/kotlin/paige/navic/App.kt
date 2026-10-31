@@ -82,6 +82,8 @@ import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.manager.VoiceActionManager
 import paige.navic.domain.manager.VoicePlayResolution
+import paige.navic.domain.manager.WidgetNavigationManager
+import paige.navic.domain.manager.WidgetNavigationTarget
 import paige.navic.domain.model.settings.ExplicitContentPlayback
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.component.layout.SideBar
@@ -129,6 +131,7 @@ import paige.navic.ui.screen.settings.SettingsPlaybackScreen
 import paige.navic.ui.screen.settings.SettingsScreen
 import paige.navic.ui.screen.settings.SettingsStreamingQualityScreen
 import paige.navic.ui.screen.settings.SettingsThemesScreen
+import paige.navic.ui.screen.settings.WidgetSettingsScreen
 import paige.navic.ui.screen.share.ShareListScreen
 import paige.navic.ui.screen.song.SimilarSongsScreen
 import paige.navic.ui.screen.song.SongDetailScreen
@@ -196,6 +199,38 @@ fun App() {
 			}
 			VoicePlayResolution.RequiresLogin -> {
 				snackBarManager.notify(R.string.notice_voice_requires_login)
+			}
+		}
+	}
+
+	val widgetNavigationManager = koinInject<WidgetNavigationManager>()
+	val pendingWidgetNavigation by widgetNavigationManager.pendingTarget.collectAsStateWithLifecycle()
+	LaunchedEffect(pendingWidgetNavigation) {
+		val target = pendingWidgetNavigation ?: return@LaunchedEffect
+		widgetNavigationManager.consume()
+		if (!isLoggedIn) return@LaunchedEffect
+		when (target) {
+			WidgetNavigationTarget.NowPlaying -> {
+				if (Screen.NowPlaying !in backStack) backStack.add(Screen.NowPlaying)
+			}
+			WidgetNavigationTarget.Queue -> {
+				if (Screen.NowPlaying !in backStack) backStack.add(Screen.NowPlaying)
+				if (Screen.Queue !in backStack) backStack.add(Screen.Queue)
+			}
+			WidgetNavigationTarget.Starred -> {
+				if (Screen.Starred() !in backStack) backStack.add(Screen.Starred())
+			}
+			WidgetNavigationTarget.PlaylistList -> {
+				if (Screen.PlaylistList() !in backStack) backStack.add(Screen.PlaylistList())
+			}
+			WidgetNavigationTarget.RadioList -> {
+				if (Screen.RadioList() !in backStack) backStack.add(Screen.RadioList())
+			}
+			WidgetNavigationTarget.Library -> {
+				if (Screen.Library() !in backStack) backStack.add(Screen.Library())
+			}
+			is WidgetNavigationTarget.Collection -> {
+				backStack.add(Screen.CollectionDetail(target.id, target.tab))
 			}
 		}
 	}
@@ -440,6 +475,9 @@ private fun entryProvider(
 		}
 		entry<Screen.Settings.NowPlaying>(metadata = detailPane("settings")) {
 			SettingsNowPlayingScreen()
+		}
+		entry<Screen.Settings.Widgets>(metadata = detailPane("settings")) {
+			WidgetSettingsScreen()
 		}
 		entry<Screen.Settings.Playback>(metadata = detailPane("settings")) {
 			SettingsPlaybackScreen()

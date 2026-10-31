@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import paige.navic.R
 import paige.navic.exoplayer.ExoStateHolder
 import paige.navic.util.Logger
+import paige.navic.widget.state.WidgetStatePublisher
 
 /**
  * Moves playback between the local ExoPlayer and a Cast receiver.
@@ -40,7 +41,8 @@ import paige.navic.util.Logger
 class CastManager(
 	private val context: Context,
 	private val stateHolder: ExoStateHolder,
-	private val snackBarManager: SnackBarManager
+	private val snackBarManager: SnackBarManager,
+	private val widgetStatePublisher: WidgetStatePublisher
 ) {
 	private val _isCasting = MutableStateFlow(false)
 	val isCasting: StateFlow<Boolean> = _isCasting.asStateFlow()
@@ -122,6 +124,7 @@ class CastManager(
 			}
 			session.setPlayer(player)
 			stateHolder.refreshSessionButtons()
+			widgetStatePublisher.onSessionPlayerChanged(player)
 			_isCasting.value = true
 			snackBarManager.notify(R.string.notice_cast_connected)
 			Logger.i(TAG, "transferred playback to the cast device")
@@ -130,6 +133,7 @@ class CastManager(
 			runCatching {
 				if (session.player !== local) session.setPlayer(local)
 			}
+			widgetStatePublisher.onSessionPlayerChanged(session.player)
 			_isCasting.value = false
 		}
 	}
@@ -165,6 +169,7 @@ class CastManager(
 				}
 			}
 		} finally {
+			widgetStatePublisher.onSessionPlayerChanged(session.player)
 			_isCasting.value = false
 			snackBarManager.notify(R.string.notice_cast_disconnected)
 		}

@@ -20,6 +20,7 @@ fun initKoin(config: KoinAppDeclaration? = null): KoinApplication {
 			dataStoreModule,
 			managerModule,
 			repositoryModule,
+			widgetModule,
 			viewModelModule
 		)
 		koin.createEagerInstances()

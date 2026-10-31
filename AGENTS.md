@@ -77,7 +77,7 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 - **发现**：Tuned In 7 种混音、AudioMuse-AI 相似推荐
 - **统计**：本地播放事件热力图、连续打卡、Top 榜
 - **歌词**：逐字卡拉 OK（方/尖括号两种格式）、`[tr]` 双语（宽容配对 + 强制刷新）、逐字放大
-- **其他**：书签续播（服务端）、语音搜索、桌面小部件、Android Auto、完整简繁中文
+- **其他**：书签续播（服务端）、语音搜索、响应式桌面小组件（正在播放/队列/快捷播放）、Android Auto、完整简繁中文
 - **更新**：GitHub Releases 自动/手动检查 + 应用内下载安装
 
 ## 歌词格式标准

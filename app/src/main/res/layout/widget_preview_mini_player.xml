@@ -64,5 +64,4 @@
 			android:background="@drawable/ic_next"
 			android:importantForAccessibility="no" />
 	</LinearLayout>
-
 </LinearLayout>

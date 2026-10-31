@@ -98,6 +98,12 @@
 			</intent-filter>
 		</activity-alias>
 
+		<activity
+			android:name=".widget.quickplay.QuickPlayConfigActivity"
+			android:excludeFromRecents="true"
+			android:exported="true"
+			android:theme="@style/Theme.Navic" />
+
 		<!-- misc activities -->
 		<activity
 			android:name=".CrashActivity"
@@ -122,10 +128,9 @@
 		<receiver
 			android:name=".widget.miniplayer.MiniPlayerReceiver"
 			android:exported="false"
-			android:label="Mini Player">
+			android:label="@string/widget_mini_player">
 			<intent-filter>
 				<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-				<action android:name="${applicationId}.NOW_PLAYING_UPDATED" />
 			</intent-filter>
 			<meta-data
 				android:name="android.appwidget.provider"
@@ -136,14 +141,39 @@
 		<receiver
 			android:name=".widget.turntable.TurnTableReceiver"
 			android:exported="false"
-			android:label="Turn Table">
+			android:label="@string/widget_turn_table">
 			<intent-filter>
 				<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-				<action android:name="${applicationId}.NOW_PLAYING_UPDATED" />
 			</intent-filter>
 			<meta-data
 				android:name="android.appwidget.provider"
 				android:resource="@xml/turn_table_widget" />
+		</receiver>
+
+		<!-- playback queue receiver -->
+		<receiver
+			android:name=".widget.queue.QueueReceiver"
+			android:exported="false"
+			android:label="@string/widget_playback_queue">
+			<intent-filter>
+				<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+			</intent-filter>
+			<meta-data
+				android:name="android.appwidget.provider"
+				android:resource="@xml/queue_widget" />
+		</receiver>
+
+		<!-- quick play receiver -->
+		<receiver
+			android:name=".widget.quickplay.QuickPlayReceiver"
+			android:exported="false"
+			android:label="@string/widget_quick_play">
+			<intent-filter>
+				<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+			</intent-filter>
+			<meta-data
+				android:name="android.appwidget.provider"
+				android:resource="@xml/quick_play_widget" />
 		</receiver>
 
 		<!-- needed for widgets to control playback -->

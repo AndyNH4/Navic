@@ -13,20 +13,28 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import org.koin.android.ext.android.inject
 import paige.navic.domain.manager.VoiceActionManager
+import paige.navic.domain.manager.WidgetNavigationManager
 
 class MainActivity : ComponentActivity() {
 	private val voiceActionManager: VoiceActionManager by inject()
+	private val widgetNavigationManager: WidgetNavigationManager by inject()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		enableEdgeToEdge()
+		handleWidgetIntent(intent)
 		handleVoiceIntent(intent)
 		setContent { App() }
 	}
 
 	override fun onNewIntent(intent: Intent) {
 		super.onNewIntent(intent)
+		handleWidgetIntent(intent)
 		handleVoiceIntent(intent)
+	}
+
+	private fun handleWidgetIntent(intent: Intent?) {
+		widgetNavigationManager.handleIntent(intent)
 	}
 
 	private fun handleVoiceIntent(intent: Intent?) {
