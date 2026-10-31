@@ -40,6 +40,7 @@ import androidx.media3.extractor.ogg.OggExtractor
 import androidx.media3.extractor.text.DefaultSubtitleParserFactory
 import androidx.media3.extractor.ts.AdtsExtractor
 import androidx.media3.extractor.wav.WavExtractor
+import androidx.media3.common.MediaMetadata
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -48,12 +49,21 @@ import androidx.media3.session.SessionToken
 import coil3.ImageLoader
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.repository.PlayerStateRepository
 import paige.navic.exoplayer.impl.ExoArtworkLoader
 import paige.navic.exoplayer.impl.CrossfadeEngine
 import paige.navic.exoplayer.impl.CrossfadeForwardingPlayer
@@ -65,9 +75,12 @@ class ExoStateHolder: KoinComponent {
 	private val context: Context by inject()
 	private val preferenceManager: PreferenceManager by inject()
 	private val imageLoader: ImageLoader by inject()
+	private val playerStateRepository: PlayerStateRepository by inject()
+	private val mediaItemFactory: PlaybackMediaItemFactory by inject()
 	private val mutex = Mutex()
 
 	private var isInitialized = false
+	private var resumptionScope: CoroutineScope? = null
 
 	val isReady: Boolean
 		get() = isInitialized
@@ -112,7 +125,7 @@ class ExoStateHolder: KoinComponent {
 		.build()
 
 
-	private class MediaSessionCallback : MediaSession.Callback {
+	private inner class MediaSessionCallback : MediaSession.Callback {
 		override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo
@@ -127,6 +140,79 @@ class ExoStateHolder: KoinComponent {
 				sessionCommands,
 				MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS
 			)
+		}
+
+		override fun onPlaybackResumption(
+			session: MediaSession,
+			controller: MediaSession.ControllerInfo,
+			isForPlayback: Boolean
+		): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+			val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+			val scope = resumptionScope
+			if (scope == null) {
+				future.setException(IllegalStateException("Playback service is not ready"))
+				return future
+			}
+
+			scope.launch {
+				try {
+					val state = playerStateRepository.state.first()
+					require(state.queue.isNotEmpty()) { "No saved playback queue" }
+					val index = state.currentIndex.coerceIn(state.queue.indices)
+					val currentSong = state.queue[index]
+					val result = if (isForPlayback) {
+						val items = withContext(Dispatchers.Default) {
+							state.queue.map(mediaItemFactory::create)
+						}
+						val durationMs = currentSong.duration.inWholeMilliseconds
+						val savedPosition = if (durationMs > 0) {
+							(state.progress * durationMs).toLong().coerceIn(0L, durationMs)
+						} else {
+							0L
+						}
+						val positionMs = if (savedPosition == durationMs && durationMs > 0) {
+							0L
+						} else {
+							savedPosition
+						}
+						session.player.shuffleModeEnabled = state.isShuffleEnabled
+						session.player.repeatMode = state.repeatMode
+						session.player.setPlaybackSpeed(state.playbackSpeed)
+						MediaSession.MediaItemsWithStartPosition(items, index, positionMs)
+					} else {
+						val item = withContext(Dispatchers.Default) {
+							mediaItemFactory.create(currentSong)
+						}
+						val artworkData = currentSong.coverArtId?.let { coverId ->
+							withContext(Dispatchers.IO) {
+								runCatching {
+									imageLoader.diskCache?.openSnapshot(coverId)?.use { snapshot ->
+										snapshot.data.toFile().readBytes()
+									}
+								}.getOrNull()
+							}
+						}
+						val metadata = item.mediaMetadata.buildUpon()
+							.setArtworkUri(null)
+							.apply {
+								artworkData?.let {
+									setArtworkData(it, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+								}
+							}
+							.build()
+						val metadataItem = item.buildUpon().setMediaMetadata(metadata).build()
+						MediaSession.MediaItemsWithStartPosition(
+							listOf(metadataItem),
+							0,
+							C.TIME_UNSET
+						)
+					}
+					future.set(result)
+				} catch (error: Throwable) {
+					future.setException(error)
+				}
+			}
+			return future
 		}
 
 		override fun onCustomCommand(
@@ -337,6 +423,7 @@ class ExoStateHolder: KoinComponent {
 	fun initState() = runBlocking {
         if (isInitialized) return@runBlocking
 
+		resumptionScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         createPlayerInstance()
         createMediaSession()
         isInitialized = !isInitialized
@@ -360,6 +447,8 @@ class ExoStateHolder: KoinComponent {
 	fun destroySession() {
 		if (!isInitialized) return
 
+		resumptionScope?.cancel()
+		resumptionScope = null
 		mediaSession.let {
 			// a remote (cast) player may be attached; detach it so the local
 			// wrapper (and through it the engine's legs) is released below

@@ -60,10 +60,11 @@ val viewModelModule = module {
 			albumDao = get(),
 			downloadManager = get(),
 			connectivityManager = get(),
-			sessionManager = get(),
 			preferenceManager = get(),
 			snackBarManager = get(),
 			audioGainManager = get(),
+			mediaItemFactory = get(),
+			queueResolver = get(),
 		)
 	}
 

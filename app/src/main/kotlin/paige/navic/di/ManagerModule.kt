@@ -35,6 +35,8 @@ import paige.navic.domain.manager.SyncManager
 import paige.navic.domain.manager.UpdateManager
 import paige.navic.domain.manager.VoiceActionManager
 import paige.navic.exoplayer.ExoStateHolder
+import paige.navic.exoplayer.PlaybackMediaItemFactory
+import paige.navic.exoplayer.PlaybackQueueResolver
 
 @OptIn(UnstableApi::class)
 val managerModule = module {
@@ -65,9 +67,11 @@ val managerModule = module {
 		}
 	}
 	single(createdAtStart = true) {
-		CastManager(get(), get(), get()).apply {
+		CastManager(get(), get(), get(), get()).apply {
 			initialize()
 		}
 	}
 	singleOf(::ExoStateHolder)
+	singleOf(::PlaybackMediaItemFactory)
+	singleOf(::PlaybackQueueResolver)
 }
