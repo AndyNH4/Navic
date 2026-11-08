@@ -81,9 +81,9 @@
 | 独立歌词设置 | 设置首页新增歌词页，集中管理来源、翻译、滚动、逐字/模拟效果、模糊、非活跃行与常亮；沿用既有偏好键 | 逐字子项依赖总开关；需用纯文本、逐行、逐字及 `[tr]` 歌词回归 |
 | 设置信息架构 | 首页按界面、播放服务、数据系统分组；新增连接与同步入口；当前播放移除歌词及重复滑动开关；存储页聚焦离线与缓存 | 连接页仍兼作登录前网络配置入口，需同时验证登录路径和平板双栏返回行为 |
 | 统一开发规范 | `AGENTS.md` 新增“界面与设置整合规范”，约束公共组件、响应式尺寸、视图模式、设置唯一归属、三语文案与验收矩阵 | 后续新增页面和设置项必须遵守，不能只依赖本次页面级修正 |
-| 统一发布流程 | 构建产物统一为 `Rezeener.apk` / `Rezeener.fdroid.apk`；标签触发 CI 构建并生成草稿，Release 只附标准版，核对中文说明后正式发布 | F-Droid 版保留为 Actions artifact，避免更新器取到错误变体；本地 wrapper 镜像补丁不提交 |
+| 统一发布流程 | 构建产物统一为 `Rezeener.apk` / `Rezeener.fdroid.apk`；标签触发 CI 构建并生成草稿，Release 只附标准版；新增四项签名 secret 与 `keytool` 预检 | F-Droid 版保留为 Actions artifact，避免更新器取到错误变体；本地 wrapper 镜像补丁不提交 |
 
-验证范围：`./gradlew :app:assembleDebug` 与 `./gradlew :app:assembleRelease` 均已通过；Release APK 已确认 `com.andy.rezeener`、`1.0.7 (9)` 和有效 V2 签名。三种目标语言资源均通过 XML 解析与新增键完整性检查；验证时无已连接 Android 设备，表中真机场景尚未执行。
+验证范围：`./gradlew :app:assembleDebug` 与 `./gradlew :app:assembleRelease` 均已通过；Release APK 已确认 `com.andy.rezeener`、`1.0.7 (9)` 和有效 V2 签名。三种目标语言资源均通过 XML 解析与新增键完整性检查；验证时无已连接 Android 设备，表中真机场景尚未执行。v1.0.7 标签 CI 因仓库未配置签名 secrets 而失败，最终按文档回退使用本地签名 APK 发布；后续标签会在构建前直接报告缺失项。
 
 ## 3. 关键 bug 修复时间线
 

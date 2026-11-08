@@ -63,7 +63,9 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 
 ## 发布流程（每次发版）
 
-统一使用**标签触发 CI、草稿审核后发布**的流程，不再并行维护一套手动上传步骤：
+统一使用**标签触发 CI、草稿审核后发布**的流程，不再并行维护一套手动上传步骤。
+
+仓库需预先配置 Actions secrets：`KEYSTORE`（签名密钥库的 base64 内容）、`KEY_ALIAS`、`KEY_PASSWORD`、`KEYSTORE_PASSWORD`。CI 会在 Gradle 构建前检查四项是否存在，并用 `keytool` 验证密钥库和别名；缺失或无效时立即失败，不再进入长时间构建。
 
 1. `app/build.gradle.kts` 改 `versionName`/`versionCode`（递增），同步更新 `docs/DEVELOPMENT_LOG.md` 与本文件状态；新功能必须补齐英文/简中/繁中。
 2. 顺序运行 `./gradlew :app:assembleDebug` 和 `./gradlew :app:assembleRelease`。Release 产物为 `app/build/outputs/apk/release/Rezeener.apk`（`keystore.properties` 或 CI 签名环境变量提供签名，**密钥库文件勿提交、务必备份**）。
