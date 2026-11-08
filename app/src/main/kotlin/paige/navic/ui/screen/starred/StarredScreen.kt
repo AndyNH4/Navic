@@ -149,11 +149,15 @@ fun StarredScreen() {
 							albumsViewModel.setReversed(it, persist = false)
 							preferenceManager.starredAlbumSortReversed = it
 						},
+						albumViewMode = preferenceManager.starredAlbumListViewMode,
+						onSetAlbumViewMode = { preferenceManager.starredAlbumListViewMode = it },
 						artistSorting = artistsSorting,
 						onSetArtistSorting = {
 							artistsViewModel.setListType(it, persist = false)
 							preferenceManager.starredArtistSortType = it
-						}
+						},
+						artistViewMode = preferenceManager.starredArtistListViewMode,
+						onSetArtistViewMode = { preferenceManager.starredArtistListViewMode = it }
 					)
 				}
 			)
@@ -232,6 +236,7 @@ fun StarredScreen() {
 				selectedAlbum = selectedAlbum,
 				selectedAlbumIsStarred = selectedAlbumIsStarred,
 				selectedAlbumRating = selectedAlbumRating,
+				albumViewMode = preferenceManager.starredAlbumListViewMode,
 				onSelectAlbum = { albumsViewModel.selectAlbum(it) },
 				onClearAlbumSelection = { albumsViewModel.clearSelection() },
 				onStarSelectedAlbum = { albumsViewModel.starAlbum(it) },
@@ -243,6 +248,7 @@ fun StarredScreen() {
 				selectedArtist = selectedArtist,
 				selectedArtistAlbums = selectedArtistAlbums,
 				selectedArtistIsStarred = selectedArtistIsStarred,
+				artistViewMode = preferenceManager.starredArtistListViewMode,
 				onSelectArtist = { artistsViewModel.selectArtist(it) },
 				onClearArtistSelection = { artistsViewModel.clearSelection() },
 				onStarSelectedArtist = { artistsViewModel.starArtist(it) },

@@ -11,11 +11,11 @@
 	<string name="title_now_playing">Now Playing</string>
 	<string name="title_bottom_app_bar">Bottom Bar</string>
 	<string name="title_playback">Playback</string>
-	<string name="title_data_storage">Data &amp; Storage</string>
+	<string name="title_data_storage">Storage &amp; Offline</string>
 	<string name="title_sync_control">Synchronization control</string>
 	<string name="title_cache_management">Cache &amp; storage management</string>
 	<string name="title_danger_zone">Danger zone</string>
-	<string name="title_developer">Developer options</string>
+	<string name="title_developer">Advanced &amp; diagnostics</string>
 	<string name="title_about">About</string>
 	<string name="title_delete_playlist">Delete playlist?</string>
 	<string name="title_delete_share">Delete share?</string>
@@ -71,13 +71,13 @@
 	<string name="title_chat">Chat</string>
 
 	<string name="subtitle_appearance">Themes, colours, layout, app icon</string>
-	<string name="subtitle_now_playing">Customise the now playing &amp; lyrics views</string>
+	<string name="subtitle_now_playing">Customise the full-screen player</string>
 	<string name="subtitle_bottom_app_bar">Customise the bottom bar &amp; mini player</string>
 	<string name="subtitle_playback">Audio effects &amp; behaviour, scrobbling</string>
-	<string name="subtitle_data_storage">Syncing, caching, data usage</string>
+	<string name="subtitle_data_storage">Downloads, offline mode, cache and data usage</string>
 	<string name="subtitle_trigger_sync">Forces a full library pull immediately</string>
 	<string name="subtitle_pending_actions">%1$d items waiting for network</string>
-	<string name="subtitle_developer">Debugging, testing, logs</string>
+	<string name="subtitle_developer">Logs, resets and diagnostics</string>
 	<string name="subtitle_about">App info, version, licences</string>
 	<string name="subtitle_playlist">Playlist</string>
 	<string name="subtitle_enable_scrobbling">Scrobble played tracks to your music server</string>
@@ -603,6 +603,15 @@
 	<string name="info_folders_offline">Folder browsing requires an internet connection</string>
 	<string name="title_similar_songs">Similar songs</string>
 	<string name="action_similar_songs">Similar songs</string>
+	<string name="info_no_cached_similar_songs">No cached similar songs</string>
+	<string name="info_similar_songs_cached">Offline results · Updated %1$s</string>
+	<string name="info_similar_songs_cached_unknown_time">Offline results</string>
+	<string name="action_prefetch_similar_songs">Prefetch similar songs</string>
+	<string name="subtitle_prefetch_similar_songs">Preload top 10 for downloaded songs · %1$d seeds / %2$d links</string>
+	<string name="info_sonic_prefetch_progress">Prefetched %1$d/%2$d · %3$d failed</string>
+	<string name="notice_sonic_prefetch_unavailable">Similarity prefetch is unavailable while offline or on this server</string>
+	<string name="action_clear_similar_song_cache">Clear similar song cache</string>
+	<string name="subtitle_clear_similar_song_cache">%1$d cached links</string>
 	<string name="notice_voice_playing">Playing %1$s</string>
 	<string name="notice_voice_requires_login">Log in to use voice actions</string>
 	<string name="info_no_starred_songs">No starred songs</string>
@@ -669,4 +678,22 @@
 	<string name="widget_quick_play">Quick Play</string>
 	<string name="widget_quick_play_description">Play a cached source with one tap</string>
 	<string name="widget_pin_unsupported">Your launcher does not support pinned widgets.</string>
+
+	<string name="title_lyrics">Lyrics</string>
+	<string name="subtitle_lyrics">Providers, translation, motion and display</string>
+	<string name="title_navigation">Navigation &amp; Mini Player</string>
+	<string name="subtitle_navigation">Tabs, bottom bar, mini player and gestures</string>
+	<string name="subtitle_swipe_to_skip">Swipe the mini player or now playing artwork to change tracks</string>
+	<string name="title_connection_sync">Connection &amp; Sync</string>
+	<string name="subtitle_connection_sync">Servers, network options and library synchronisation</string>
+	<string name="title_settings_group_interface">Interface &amp; experience</string>
+	<string name="title_settings_group_playback_services">Playback &amp; services</string>
+	<string name="title_settings_group_data_system">Data &amp; system</string>
+	<string name="title_interface_interaction">Interface &amp; interaction</string>
+	<string name="title_recommendation_cache">AudioMuse-AI recommendations</string>
+	<string name="title_lyrics_sources_content">Sources &amp; content</string>
+	<string name="title_lyrics_dynamic_effects">Motion &amp; effects</string>
+	<string name="option_lyrics_show_translation">Show translations</string>
+	<string name="subtitle_lyrics_show_translation">Show available [tr] translation lines below the original lyrics</string>
+	<string name="subtitle_lyrics_beat_by_beat">Master switch for word-by-word and simulated effects</string>
 </resources>

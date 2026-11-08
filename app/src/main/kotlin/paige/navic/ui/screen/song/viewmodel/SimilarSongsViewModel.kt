@@ -18,7 +18,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.model.DomainSong
+import paige.navic.domain.repository.SonicSimilarityCacheMissException
 import paige.navic.domain.repository.SonicSimilarityRepository
+import paige.navic.domain.repository.SonicSimilarityResult
 import paige.navic.domain.repository.SongRepository
 import paige.navic.ui.core.UiState
 
@@ -30,6 +32,12 @@ class SimilarSongsViewModel(
 ) : ViewModel() {
 	val songsState: StateFlow<UiState<ImmutableList<DomainSong>>>
 		field = MutableStateFlow<UiState<ImmutableList<DomainSong>>>(UiState.Loading())
+
+	val similarityResult: StateFlow<SonicSimilarityResult?>
+		field = MutableStateFlow(null)
+
+	val cacheMiss: StateFlow<Boolean>
+		field = MutableStateFlow(false)
 
 	val allDownloads = downloadManager.allDownloads
 		.stateIn(
@@ -55,9 +63,16 @@ class SimilarSongsViewModel(
 		viewModelScope.launch {
 			songsState.value = UiState.Loading(data = songsState.value.data)
 			try {
-				val songs = sonicSimilarityRepository.getSimilarSongs(songId).toImmutableList()
-				songsState.value = UiState.Success(data = songs)
+				val result = sonicSimilarityRepository.getSimilarSongs(songId)
+				similarityResult.value = result
+				cacheMiss.value = false
+				songsState.value = UiState.Success(data = result.songs.toImmutableList())
+			} catch (_: SonicSimilarityCacheMissException) {
+				similarityResult.value = null
+				cacheMiss.value = true
+				songsState.value = UiState.Success(data = persistentListOf())
 			} catch (error: Exception) {
+				cacheMiss.value = false
 				songsState.value = UiState.Error(error = error, data = songsState.value.data)
 			}
 		}

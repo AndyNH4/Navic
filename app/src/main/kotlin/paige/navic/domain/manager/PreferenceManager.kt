@@ -179,4 +179,7 @@ class PreferenceManager(
 
 	var lyricsWordScale by preference(true)
 	var lyricsShowTranslation by preference(false)
+
+	var starredAlbumListViewMode by preference(ListViewMode.Grid)
+	var starredArtistListViewMode by preference(ListViewMode.Grid)
 }

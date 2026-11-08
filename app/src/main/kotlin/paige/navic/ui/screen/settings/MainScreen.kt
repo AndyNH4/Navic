@@ -43,6 +43,8 @@ import paige.navic.icons.outlined.ChevronForward
 import paige.navic.icons.outlined.Code
 import paige.navic.icons.outlined.DataTable
 import paige.navic.icons.outlined.Grid
+import paige.navic.icons.outlined.Link
+import paige.navic.icons.outlined.Lyrics
 import paige.navic.icons.outlined.Note
 import paige.navic.ui.component.common.SegmentedListItem
 import paige.navic.ui.component.common.SegmentedListItemDefaults
@@ -64,14 +66,14 @@ fun SettingsScreen() {
 				.padding(horizontal = 16.dp),
 			verticalArrangement = Arrangement.spacedBy(SettingsGroupDefaults.GapBetweenGroups)
 		) {
-			SettingsGroup {
+			SettingsGroup(title = { Text(stringResource(R.string.title_settings_group_interface)) }) {
 				PageRow(
 					destination = Screen.Settings.Appearance,
 					icon = Icons.Filled.Palette,
 					iconSize = 24.dp,
 					title = R.string.title_appearance,
 					subtitle = R.string.subtitle_appearance,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 7)
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 4)
 				)
 				PageRow(
 					destination = Screen.Settings.NowPlaying,
@@ -79,7 +81,53 @@ fun SettingsScreen() {
 					iconSize = 24.dp,
 					title = R.string.title_now_playing,
 					subtitle = R.string.subtitle_now_playing,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 7)
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 4)
+				)
+				PageRow(
+					destination = Screen.Settings.Lyrics,
+					icon = Icons.Outlined.Lyrics,
+					iconSize = 24.dp,
+					title = R.string.title_lyrics,
+					subtitle = R.string.subtitle_lyrics,
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
+				)
+				PageRow(
+					destination = Screen.Settings.BottomAppBar,
+					icon = Icons.Filled.BottomNavigation,
+					iconSize = 24.dp,
+					title = R.string.title_navigation,
+					subtitle = R.string.subtitle_navigation,
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 4)
+				)
+			}
+
+			SettingsGroup(title = { Text(stringResource(R.string.title_settings_group_playback_services)) }) {
+				PageRow(
+					destination = Screen.Settings.Playback,
+					icon = Icons.Outlined.Note,
+					iconSize = 24.dp,
+					title = R.string.title_playback,
+					subtitle = R.string.subtitle_playback,
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 2)
+				)
+				PageRow(
+					destination = Screen.Settings.ConnectionOptions,
+					icon = Icons.Outlined.Link,
+					iconSize = 24.dp,
+					title = R.string.title_connection_sync,
+					subtitle = R.string.subtitle_connection_sync,
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 2)
+				)
+			}
+
+			SettingsGroup(title = { Text(stringResource(R.string.title_settings_group_data_system)) }) {
+				PageRow(
+					destination = Screen.Settings.DataStorage,
+					icon = Icons.Outlined.DataTable,
+					iconSize = 24.dp,
+					title = R.string.title_data_storage,
+					subtitle = R.string.subtitle_data_storage,
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 4)
 				)
 				PageRow(
 					destination = Screen.Settings.Widgets,
@@ -87,31 +135,7 @@ fun SettingsScreen() {
 					iconSize = 24.dp,
 					title = R.string.title_widgets,
 					subtitle = R.string.subtitle_widgets,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 7)
-				)
-				PageRow(
-					destination = Screen.Settings.BottomAppBar,
-					icon = Icons.Filled.BottomNavigation,
-					iconSize = 24.dp,
-					title = R.string.title_bottom_app_bar,
-					subtitle = R.string.subtitle_bottom_app_bar,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 7)
-				)
-				PageRow(
-					destination = Screen.Settings.Playback,
-					icon = Icons.Outlined.Note,
-					iconSize = 24.dp,
-					title = R.string.title_playback,
-					subtitle = R.string.subtitle_playback,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 4, count = 7)
-				)
-				PageRow(
-					destination = Screen.Settings.DataStorage,
-					icon = Icons.Outlined.DataTable,
-					iconSize = 24.dp,
-					title = R.string.title_data_storage,
-					subtitle = R.string.subtitle_data_storage,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 5, count = 7)
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 4)
 				)
 				PageRow(
 					destination = Screen.Settings.Developer,
@@ -119,16 +143,14 @@ fun SettingsScreen() {
 					iconSize = 24.dp,
 					title = R.string.title_developer,
 					subtitle = R.string.subtitle_developer,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 6, count = 7)
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
 				)
-			}
-			SettingsGroup {
 				PageRow(
 					destination = Screen.Settings.About,
 					icon = Icons.Filled.Info,
 					title = R.string.title_about,
 					subtitle = R.string.subtitle_about,
-					shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 1)
+					shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 4)
 				)
 			}
 		}

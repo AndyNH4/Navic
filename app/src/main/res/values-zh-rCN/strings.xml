@@ -8,7 +8,7 @@
     <string name="title_now_playing">当前播放</string>
     <string name="title_bottom_app_bar">底部导航</string>
     <string name="title_playback">播放</string>
-    <string name="title_developer">开发者选项</string>
+    <string name="title_developer">高级与诊断</string>
     <string name="title_about">关于</string>
     <string name="title_delete_playlist">是否删除歌单？</string>
     <string name="title_delete_share">是否删除分享？</string>
@@ -30,8 +30,8 @@
     <string name="title_layout">布局</string>
     <string name="subtitle_appearance">主题、颜色与布局</string>
     <string name="subtitle_now_playing">自定义全屏播放页</string>
-    <string name="subtitle_playback">音频行为、听歌记录与歌词</string>
-    <string name="subtitle_developer">调试</string>
+    <string name="subtitle_playback">音频行为、听歌记录与音效</string>
+    <string name="subtitle_developer">日志、重置与诊断</string>
     <string name="subtitle_about">应用信息、版本与许可证</string>
     <string name="subtitle_playlist">播放列表</string>
     <string name="subtitle_enable_scrobbling">将播放记录同步到 Navidrome 服务器</string>
@@ -205,7 +205,7 @@
     <string name="action_queue">队列</string>
     <string name="action_reorder">重新排序</string>
     <string name="info_unknown">未知</string>
-    <string name="title_data_storage">数据&amp;存储</string>
+    <string name="title_data_storage">存储与离线</string>
     <string name="title_sync_control">同步化控制</string>
     <string name="title_cache_management">缓存与存储管理</string>
     <string name="title_danger_zone">危险区</string>
@@ -216,7 +216,7 @@
     <string name="title_network">网络</string>
     <string name="title_streaming_quality">流媒体质量</string>
     <string name="title_cellular">蜂窝网络</string>
-    <string name="subtitle_data_storage">管理同步、网络使用和缓存</string>
+    <string name="subtitle_data_storage">下载、离线模式、缓存与数据用量</string>
     <string name="subtitle_trigger_sync">立即强制完整拉取音乐库</string>
     <string name="subtitle_check_for_updates">建议保持此选项开启，因为某些更新会提供重要的错误修复</string>
     <string name="subtitle_offline_mode">决定应用何时进入离线模式。需要重启应用程序</string>
@@ -560,6 +560,15 @@
     <string name="info_folders_offline">文件夹浏览需要联网</string>
     <string name="title_similar_songs">相似歌曲</string>
     <string name="action_similar_songs">相似歌曲</string>
+    <string name="info_no_cached_similar_songs">暂无离线相似歌曲缓存</string>
+    <string name="info_similar_songs_cached">离线结果 · 更新于 %1$s</string>
+    <string name="info_similar_songs_cached_unknown_time">离线结果</string>
+    <string name="action_prefetch_similar_songs">预取相似歌曲</string>
+    <string name="subtitle_prefetch_similar_songs">为已下载歌曲预取前 10 首 · 已缓存 %1$d 首 / %2$d 条</string>
+    <string name="info_sonic_prefetch_progress">已预取 %1$d/%2$d · 失败 %3$d 首</string>
+    <string name="notice_sonic_prefetch_unavailable">离线或当前服务器不支持时无法预取</string>
+    <string name="action_clear_similar_song_cache">清除相似歌曲缓存</string>
+    <string name="subtitle_clear_similar_song_cache">已缓存 %1$d 条推荐</string>
     <string name="notice_voice_playing">正在播放 %1$s</string>
     <string name="notice_voice_requires_login">登录后才能使用语音操作</string>
     <string name="info_no_starred_songs">暂无最爱曲目</string>
@@ -625,4 +634,22 @@
     <string name="widget_quick_play">快捷播放</string>
     <string name="widget_quick_play_description">一键播放缓存来源</string>
     <string name="widget_pin_unsupported">当前桌面启动器不支持固定小组件。</string>
+
+    <string name="title_lyrics">歌词</string>
+    <string name="subtitle_lyrics">歌词来源、翻译、滚动与显示效果</string>
+    <string name="title_navigation">导航与迷你播放器</string>
+    <string name="subtitle_navigation">栏目、底栏、迷你播放器与手势</string>
+    <string name="subtitle_swipe_to_skip">滑动迷你播放器或当前播放封面切歌</string>
+    <string name="title_connection_sync">连接与同步</string>
+    <string name="subtitle_connection_sync">服务器、网络选项与音乐库同步</string>
+    <string name="title_settings_group_interface">界面与体验</string>
+    <string name="title_settings_group_playback_services">播放与服务</string>
+    <string name="title_settings_group_data_system">数据与系统</string>
+    <string name="title_interface_interaction">界面与交互</string>
+    <string name="title_recommendation_cache">AudioMuse-AI 推荐缓存</string>
+    <string name="title_lyrics_sources_content">来源与内容</string>
+    <string name="title_lyrics_dynamic_effects">动态效果</string>
+    <string name="option_lyrics_show_translation">显示翻译歌词</string>
+    <string name="subtitle_lyrics_show_translation">在有 [tr] 翻译时显示于原文下方</string>
+    <string name="subtitle_lyrics_beat_by_beat">逐字与模拟效果的总开关</string>
 </resources>

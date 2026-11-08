@@ -14,10 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -28,41 +25,29 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.dropUnlessResumed
 import kotlin.time.Duration
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 import paige.navic.R
 import paige.navic.data.database.entity.DownloadEntity
-import paige.navic.data.database.entity.DownloadStatus
-import paige.navic.di.LocalNavStack
-import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.model.DomainAlbum
 import paige.navic.domain.model.DomainArtist
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.DomainStarredCollection
+import paige.navic.domain.model.settings.ListViewMode
 import paige.navic.ui.component.common.ContentUnavailable
-import paige.navic.ui.component.layout.ArtCarouselItem
-import paige.navic.ui.component.sheet.ArtistSheet
-import paige.navic.ui.component.sheet.CollectionSheet
+import paige.navic.ui.component.layout.ArtGrid
 import paige.navic.ui.core.UiState
-import paige.navic.ui.navigation.Screen
+import paige.navic.ui.screen.album.component.AlbumListScreenGridItem
+import paige.navic.ui.screen.album.component.AlbumListScreenListItem
+import paige.navic.ui.screen.artist.ArtistListScreenGridItem
+import paige.navic.ui.screen.artist.component.ArtistListScreenListItem
 import paige.navic.ui.screen.collection.component.CollectionDetailScreenHeadingRowButtons
-import paige.navic.ui.screen.playlist.dialog.PlaylistUpdateDialog
 import paige.navic.ui.util.withoutTop
 import paige.navic.util.toSummaryString
 
@@ -91,11 +76,11 @@ fun StarredScreenContent(
 	onCancelDownloadSong: (DomainSong) -> Unit,
 	onDeleteDownloadSong: (DomainSong) -> Unit,
 
-	// albums
 	albumsState: UiState<ImmutableList<DomainAlbum>>,
 	selectedAlbum: DomainAlbum?,
 	selectedAlbumIsStarred: Boolean,
 	selectedAlbumRating: Int,
+	albumViewMode: ListViewMode,
 	onSelectAlbum: (DomainAlbum) -> Unit,
 	onClearAlbumSelection: () -> Unit,
 	onStarSelectedAlbum: (Boolean) -> Unit,
@@ -103,26 +88,20 @@ fun StarredScreenContent(
 	onPlayAlbumNext: () -> Unit,
 	onAddAlbumToQueue: () -> Unit,
 
-	// artists
 	artistsState: UiState<ImmutableList<DomainArtist>>,
 	selectedArtist: DomainArtist?,
 	selectedArtistAlbums: ImmutableList<DomainAlbum>?,
 	selectedArtistIsStarred: Boolean,
+	artistViewMode: ListViewMode,
 	onSelectArtist: (DomainArtist) -> Unit,
 	onClearArtistSelection: () -> Unit,
 	onStarSelectedArtist: (Boolean) -> Unit,
 	onPlayArtistNext: () -> Unit,
 	onAddArtistToQueue: () -> Unit,
 ) {
-	val backStack = LocalNavStack.current
 	val albums = albumsState.data.orEmpty()
 	val songs = songsState.data.orEmpty()
 	val artists = artistsState.data.orEmpty()
-	val downloadManager = koinInject<DownloadManager>()
-
-	val scope = rememberCoroutineScope()
-
-	var songsToAddToPlaylist by rememberSaveable { mutableStateOf<ImmutableList<DomainSong>?>(null) }
 
 	val songsListState = rememberLazyListState()
 	val albumsGridState = rememberLazyGridState()
@@ -240,64 +219,44 @@ fun StarredScreenContent(
 							label = stringResource(R.string.info_no_starred_albums)
 						)
 					} else {
-						LazyVerticalGrid(
-							columns = GridCells.Fixed(2),
-							modifier = Modifier.fillMaxSize(),
+						ArtGrid(
 							state = albumsGridState,
-							contentPadding = innerPadding.withoutTop() + PaddingValues(
-								start = 16.dp,
-								top = 16.dp,
-								end = 16.dp
-							),
-							horizontalArrangement = Arrangement.spacedBy(12.dp),
-							verticalArrangement = Arrangement.spacedBy(12.dp)
+							contentPadding = innerPadding.withoutTop(),
+							selectedViewMode = albumViewMode,
+							verticalArrangement = Arrangement.spacedBy(
+								if (albumViewMode == ListViewMode.List) 0.dp else 12.dp
+							)
 						) {
-							items(
-								items = albums,
-								key = { it.id }
-							) { album ->
-								val albumDownloadStatus by downloadManager
-									.getCollectionDownloadStatus(album.songs.map { it.id })
-									.collectAsState(initial = DownloadStatus.NOT_DOWNLOADED)
-								ArtCarouselItem(
-									coverArtId = album.coverArtId,
-									title = album.name ?: "[unknown album]",
-									subtitle = album.artistName,
-									contentDescription = null,
-									onSelect = { onSelectAlbum(album) },
-									onClick = dropUnlessResumed {
-										backStack.add(Screen.CollectionDetail(album.id, "artist"))
-									}
-								)
-								if (selectedAlbum == album) {
-									CollectionSheet(
-										onDismissRequest = { onClearAlbumSelection() },
-										collection = album,
+							items(albums, key = { it.id }) { album ->
+								if (albumViewMode == ListViewMode.Grid) {
+									AlbumListScreenGridItem(
+										modifier = Modifier.animateItem(),
+										tab = "starred",
+										album = album,
+										selected = album == selectedAlbum,
 										starred = selectedAlbumIsStarred,
-										onShare = { onSetShareId(album.id) },
+										rating = selectedAlbumRating,
+										onSelect = { onSelectAlbum(album) },
+										onDeselect = onClearAlbumSelection,
+										onSetStarred = onStarSelectedAlbum,
+										onSetShareId = onSetShareId,
 										onPlayNext = onPlayAlbumNext,
 										onAddToQueue = onAddAlbumToQueue,
-										onSetStarred = { onStarSelectedAlbum(!selectedAlbumIsStarred) },
-										onAddAllToPlaylist = {
-											songsToAddToPlaylist = selectedAlbum.songs.toImmutableList()
-										},
-										downloadStatus = albumDownloadStatus,
-										onDownloadAll = {
-											scope.launch {
-												downloadManager.downloadCollection(album)
-											}
-										},
-										onCancelDownloadAll = {
-											scope.launch {
-												album.songs.forEach { downloadManager.cancelDownload(it.id) }
-											}
-										},
-										onDeleteDownloadAll = {
-											scope.launch {
-												downloadManager.deleteDownloadedCollection(album)
-											}
-										},
+										onSetRating = onRateSelectedAlbum
+									)
+								} else {
+									AlbumListScreenListItem(
+										modifier = Modifier.animateItem(),
+										album = album,
+										selected = album == selectedAlbum,
+										starred = selectedAlbumIsStarred,
 										rating = selectedAlbumRating,
+										onSelect = { onSelectAlbum(album) },
+										onDeselect = onClearAlbumSelection,
+										onSetStarred = onStarSelectedAlbum,
+										onSetShareId = onSetShareId,
+										onPlayNext = onPlayAlbumNext,
+										onAddToQueue = onAddAlbumToQueue,
 										onSetRating = onRateSelectedAlbum
 									)
 								}
@@ -312,49 +271,41 @@ fun StarredScreenContent(
 							label = stringResource(R.string.info_no_starred_artists)
 						)
 					} else {
-						LazyVerticalGrid(
-							columns = GridCells.Fixed(2),
-							modifier = Modifier.fillMaxSize(),
+						ArtGrid(
 							state = artistsGridState,
-							contentPadding = innerPadding.withoutTop() + PaddingValues(
-								start = 16.dp,
-								top = 16.dp,
-								end = 16.dp
-							),
-							horizontalArrangement = Arrangement.spacedBy(12.dp),
-							verticalArrangement = Arrangement.spacedBy(12.dp)
+							contentPadding = innerPadding.withoutTop(),
+							selectedViewMode = artistViewMode,
+							verticalArrangement = Arrangement.spacedBy(
+								if (artistViewMode == ListViewMode.List) 0.dp else 12.dp
+							)
 						) {
-							items(
-								items = artists,
-								key = { it.id }
-							) { artist ->
-								ArtCarouselItem(
-									coverArtId = artist.coverArtId,
-									title = artist.name,
-									subtitle = pluralStringResource(
-										R.plurals.count_albums,
-										artist.albumCount,
-										artist.albumCount
-									),
-									contentDescription = null,
-									onSelect = { onSelectArtist(artist) },
-									onClick = dropUnlessResumed {
-										backStack.add(Screen.ArtistDetail(artist.id))
-									}
-								)
-								if (selectedArtist == artist) {
-									ArtistSheet(
-										onDismissRequest = onClearArtistSelection,
+							items(artists, key = { it.id }) { artist ->
+								if (artistViewMode == ListViewMode.Grid) {
+									ArtistListScreenGridItem(
+										modifier = Modifier.animateItem(),
+										tab = "starred",
 										artist = artist,
+										selected = artist == selectedArtist,
+										selectedArtistAlbums = selectedArtistAlbums,
+										starred = selectedArtistIsStarred,
+										onSelect = { onSelectArtist(artist) },
+										onDeselect = onClearArtistSelection,
 										onPlayNext = onPlayArtistNext,
 										onAddToQueue = onAddArtistToQueue,
-										onAddAllToPlaylist = {
-											songsToAddToPlaylist =
-												selectedArtistAlbums?.flatMap { it.songs }.orEmpty()
-													.toImmutableList()
-										},
+										onSetStarred = onStarSelectedArtist
+									)
+								} else {
+									ArtistListScreenListItem(
+										modifier = Modifier.animateItem(),
+										artist = artist,
+										selected = artist == selectedArtist,
+										selectedArtistAlbums = selectedArtistAlbums,
 										starred = selectedArtistIsStarred,
-										onSetStarred = { onStarSelectedArtist(!selectedArtistIsStarred) }
+										onSelect = { onSelectArtist(artist) },
+										onDeselect = onClearArtistSelection,
+										onPlayNext = onPlayArtistNext,
+										onAddToQueue = onAddArtistToQueue,
+										onSetStarred = onStarSelectedArtist
 									)
 								}
 							}
@@ -363,13 +314,6 @@ fun StarredScreenContent(
 				}
 			}
 		}
-	}
-
-	songsToAddToPlaylist?.let {
-		PlaylistUpdateDialog(
-			songs = it,
-			onDismissRequest = { songsToAddToPlaylist = null }
-		)
 	}
 }
 

@@ -193,7 +193,7 @@ fun SettingsAppearanceScreen() {
 					}
 				}
 
-				SettingsGroup(title = { Text(stringResource(R.string.title_miscellaneous)) }) {
+				SettingsGroup(title = { Text(stringResource(R.string.title_interface_interaction)) }) {
 					SettingsToggleItem(
 						content = { Text(stringResource(R.string.option_dynamic_theming)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_dynamic_theming)) },

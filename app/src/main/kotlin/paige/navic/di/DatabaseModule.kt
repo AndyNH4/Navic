@@ -14,6 +14,7 @@ import paige.navic.data.database.CacheDatabase
 import paige.navic.data.database.DownloadDatabase
 import paige.navic.data.database.MIGRATION_21_22
 import paige.navic.data.database.MIGRATION_22_23
+import paige.navic.data.database.MIGRATION_23_24
 import paige.navic.data.database.MIGRATION_3_4
 
 val databaseModule = module {
@@ -24,7 +25,7 @@ val databaseModule = module {
 		Room
 			.databaseBuilder<CacheDatabase>(get(), dbPath)
 			.setDriver(BundledSQLiteDriver())
-			.addMigrations(MIGRATION_21_22, MIGRATION_22_23)
+			.addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24)
 			.fallbackToDestructiveMigration(true)
 			.build()
 	}
@@ -50,6 +51,7 @@ val databaseModule = module {
 	single { get<CacheDatabase>().playlistDao() }
 	single { get<CacheDatabase>().radioDao() }
 	single { get<CacheDatabase>().songDao() }
+	single { get<CacheDatabase>().sonicSimilarityDao() }
 	single { get<CacheDatabase>().syncActionDao() }
 	single { get<DownloadDatabase>().downloadDao() }
 	single { get<DownloadDatabase>().pinnedCollectionDao() }

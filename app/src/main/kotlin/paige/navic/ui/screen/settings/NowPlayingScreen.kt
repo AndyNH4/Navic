@@ -39,9 +39,7 @@ import paige.navic.ui.component.layout.NestedTopBarDefaults
 import paige.navic.ui.screen.settings.component.SettingsChoiceItem
 import paige.navic.ui.screen.settings.component.SettingsGroup
 import paige.navic.ui.screen.settings.component.SettingsGroupDefaults
-import paige.navic.ui.screen.settings.component.SettingsNavItem
 import paige.navic.ui.screen.settings.component.SettingsToggleItem
-import paige.navic.ui.screen.settings.dialog.LyricsPrioritySheet
 import paige.navic.ui.screen.settings.dialog.NowPlayingSliderStyleDialog
 
 @Composable
@@ -49,7 +47,6 @@ fun SettingsNowPlayingScreen() {
 	val sizeClass = LocalSizeClass.current
 	val hideBack = sizeClass.widthSizeClass >= WindowWidthSizeClass.Medium
 	val preferenceManager = koinInject<PreferenceManager>()
-	var lyricProvidersSheetOpen by rememberSaveable { mutableStateOf(false) }
 	var sliderStyleDialogOpen by rememberSaveable { mutableStateOf(false) }
 
 	Scaffold(
@@ -75,19 +72,13 @@ fun SettingsNowPlayingScreen() {
 				verticalArrangement = Arrangement.spacedBy(SettingsGroupDefaults.GapBetweenGroups)
 			) {
 				SettingsGroup {
-					SettingsToggleItem(
-						checked = preferenceManager.swipeToSkip,
-						onCheckedChange = { preferenceManager.swipeToSkip = it },
-						content = { Text(stringResource(R.string.option_swipe_to_skip)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 4)
-					)
 					SettingsChoiceItem(
 						content = { Text(stringResource(R.string.option_cover_art_action)) },
 						choices = CoverArtTapAction.entries.toImmutableList(),
 						selectedChoice = preferenceManager.nowPlayingCoverArtAction,
 						onChoiceSelected = { preferenceManager.nowPlayingCoverArtAction = it },
 						label = { stringResource(it.displayName) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 4)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 3)
 					)
 					SettingsChoiceItem(
 						content = { Text(stringResource(R.string.option_now_playing_background_style)) },
@@ -96,66 +87,13 @@ fun SettingsNowPlayingScreen() {
 						selectedChoice = preferenceManager.nowPlayingBackgroundStyle,
 						onChoiceSelected = { preferenceManager.nowPlayingBackgroundStyle = it },
 						label = { stringResource(it.displayName) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 3)
 					)
 					SegmentedListItem(
 						onClick = { sliderStyleDialogOpen = true },
 						content = { Text(stringResource(R.string.option_now_playing_slider_style)) },
 						supportingContent = { Text(stringResource(preferenceManager.nowPlayingSliderStyle.displayName)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 4)
-					)
-				}
-
-				SettingsGroup(title = { Text(stringResource(R.string.action_lyrics)) }) {
-					SettingsNavItem(
-						onClick = { lyricProvidersSheetOpen = true },
-						content = { Text(stringResource(R.string.action_configure_lyric_providers)) },
-						supportingContent = { Text(stringResource(R.string.subtitle_configure_lyric_providers)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsAutoscroll,
-						onCheckedChange = { preferenceManager.lyricsAutoscroll = it },
-						content = { Text(stringResource(R.string.option_lyrics_autoscroll)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsBeatByBeat,
-						onCheckedChange = { preferenceManager.lyricsBeatByBeat = it },
-						content = { Text(stringResource(R.string.option_lyrics_beat_by_beat)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsFakeBeatByBeat,
-						onCheckedChange = { preferenceManager.lyricsFakeBeatByBeat = it },
-						content = { Text(stringResource(R.string.option_lyrics_fake_beat_by_beat)) },
-						supportingContent = { Text(stringResource(R.string.subtitle_lyrics_fake_beat_by_beat)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsWordScale,
-						onCheckedChange = { preferenceManager.lyricsWordScale = it },
-						content = { Text(stringResource(R.string.option_lyrics_word_scale)) },
-						supportingContent = { Text(stringResource(R.string.subtitle_lyrics_word_scale)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 4, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsKeepAlive,
-						onCheckedChange = { preferenceManager.lyricsKeepAlive = it },
-						content = { Text(stringResource(R.string.option_lyrics_keep_alive)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 5, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsBlur,
-						onCheckedChange = { preferenceManager.lyricsBlur = it },
-						content = { Text(stringResource(R.string.option_lyrics_blur)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 6, count = 8)
-					)
-					SettingsToggleItem(
-						checked = preferenceManager.lyricsBrightInactive,
-						onCheckedChange = { preferenceManager.lyricsBrightInactive = it },
-						content = { Text(stringResource(R.string.option_lyrics_bright_inactive)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 7, count = 8)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 3)
 					)
 				}
 
@@ -179,10 +117,6 @@ fun SettingsNowPlayingScreen() {
 		}
 	}
 
-	LyricsPrioritySheet(
-		presented = lyricProvidersSheetOpen,
-		onDismissRequest = { lyricProvidersSheetOpen = false }
-	)
 	NowPlayingSliderStyleDialog(
 		presented = sliderStyleDialogOpen,
 		onDismissRequest = { sliderStyleDialogOpen = false }

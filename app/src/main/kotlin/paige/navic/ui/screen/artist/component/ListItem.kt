@@ -61,7 +61,7 @@ fun ArtistListScreenListItem(
 				CoverArt(
 					coverArtId = artist.coverArtId,
 					modifier = Modifier.size(50.dp),
-					shape = preferenceManager.coverArtShape.decreasedShape
+					shape = preferenceManager.artistImageShape.decreasedShape
 				)
 			},
 			content = { MarqueeText(artist.name) },

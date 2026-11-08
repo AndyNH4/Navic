@@ -73,10 +73,7 @@ import paige.navic.ui.screen.settings.component.SettingsChoiceItem
 import paige.navic.ui.screen.settings.component.SettingsGroup
 import paige.navic.ui.screen.settings.component.SettingsGroupDefaults
 import paige.navic.ui.screen.settings.component.SettingsNavItem
-import paige.navic.ui.screen.settings.component.SettingsToggleItem
 import paige.navic.ui.screen.settings.viewmodel.SettingsDataStorageViewModel
-import kotlin.time.Clock
-import kotlin.time.Instant
 
 @Composable
 fun SettingsDataStorageScreen() {
@@ -91,8 +88,6 @@ fun SettingsDataStorageScreen() {
 	val scope = rememberCoroutineScope()
 	val imageLoader = koinInject<ImageLoader>()
 
-	val syncState by viewModel.syncState.collectAsStateWithLifecycle()
-	val pendingActionCount by viewModel.pendingActionCount.collectAsStateWithLifecycle()
 	val downloadCount by viewModel.downloadCount.collectAsStateWithLifecycle(0)
 	val downloadSize by viewModel.downloadSize.collectAsStateWithLifecycle(0L)
 	val serverCapabilities by sessionManager.serverCapabilities.collectAsStateWithLifecycle()
@@ -100,6 +95,9 @@ fun SettingsDataStorageScreen() {
 	var showLibraryDownloadDialog by remember { mutableStateOf(false) }
 	val isDownloadingLibrary by viewModel.isDownloadingLibrary.collectAsStateWithLifecycle()
 	val libraryDownloadProgress by viewModel.libraryDownloadProgress.collectAsStateWithLifecycle()
+	val sonicPrefetchState by viewModel.sonicPrefetchState.collectAsStateWithLifecycle()
+	val sonicCachedSeedCount by viewModel.sonicCachedSeedCount.collectAsStateWithLifecycle()
+	val sonicCachedRelationCount by viewModel.sonicCachedRelationCount.collectAsStateWithLifecycle()
 
 	val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
@@ -116,14 +114,6 @@ fun SettingsDataStorageScreen() {
 		}
 	}
 
-	val smoothSyncProgress by animateFloatAsState(
-		if (syncState.isSyncing) syncState.progress else 0f,
-		animationSpec = tween(
-			durationMillis = 250,
-			easing = EaseOut
-		)
-	)
-
 	val smoothLibraryDownloadProgress by animateFloatAsState(
 		targetValue = libraryDownloadProgress.coerceIn(0f, 1f),
 		animationSpec = tween(durationMillis = 500, easing = EaseOut)
@@ -136,25 +126,6 @@ fun SettingsDataStorageScreen() {
 				stringResource(R.string.info_not_available_offline),
 				modifier = Modifier.size(20.dp)
 			)
-		}
-	}
-
-	@Composable
-	fun timeSinceLastSync(): String {
-		val time = preferenceManager.lastFullSyncTime
-
-		if (time == 0L) return stringResource(R.string.info_sync_never)
-
-		val duration = Clock.System.now() - Instant.fromEpochMilliseconds(time)
-		val minutes = duration.inWholeMinutes.toInt()
-		val hours = duration.inWholeHours.toInt()
-		val days = duration.inWholeDays.toInt()
-
-		return when {
-			minutes < 1 -> stringResource(R.string.info_sync_just_now)
-			hours < 1 -> pluralStringResource(R.plurals.count_minutes_ago, minutes, minutes)
-			days < 1 -> pluralStringResource(R.plurals.count_hours_ago, hours, hours)
-			else -> pluralStringResource(R.plurals.count_days_ago, days, days)
 		}
 	}
 
@@ -231,80 +202,7 @@ fun SettingsDataStorageScreen() {
 					)
 				}
 
-				SettingsGroup(title = { Text(stringResource(R.string.title_sync_control)) }) {
-					SegmentedListItem(
-						onClick = {},
-						content = { Text(stringResource(R.string.option_live_status)) },
-						supportingContent = {
-							Column(Modifier.fillMaxWidth()) {
-								Text(stringResource(syncState.message))
-								AnimatedVisibility(
-									syncState.isSyncing,
-									enter = fadeIn() + expandVertically(clip = false),
-									exit = fadeOut() + shrinkVertically(clip = false)
-								) {
-									LinearProgressIndicator(
-										progress = {
-											if (!syncState.isSyncing)
-												1f
-											else smoothSyncProgress.coerceIn(0f, 1f)
-										},
-										modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-									)
-								}
-							}
-						},
-						trailingContent = offlineIcon,
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 4)
-					)
-
-					SegmentedListItem(
-						onClick = viewModel::triggerManualSync,
-						enabled = isOnline,
-						content = { Text(stringResource(R.string.action_trigger_sync)) },
-						supportingContent = { Text(stringResource(R.string.subtitle_trigger_sync)) },
-						trailingContent = offlineIcon,
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 4)
-					)
-
-					SettingsToggleItem(
-						checked = preferenceManager.syncServerPlayHistory,
-						onCheckedChange = { enabled ->
-							if (!serverCapabilities.navidromeNativeAvailable
-								|| !preferenceManager.navidromeEnhancementEnabled
-							) {
-								snackBarManager.notify(R.string.notice_navidrome_enhancement_unavailable)
-							} else {
-								preferenceManager.syncServerPlayHistory = enabled
-							}
-						},
-						content = { Text(stringResource(R.string.option_sync_server_play_history)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
-					)
-
-					SegmentedListItem(
-						onClick = {},
-						content = { Text(stringResource(R.string.option_last_sync)) },
-						supportingContent = { Text(timeSinceLastSync()) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 4)
-					)
-				}
-
 				SettingsGroup(title = { Text(stringResource(R.string.title_cache_management)) }) {
-					SegmentedListItem(
-						onClick = {},
-						content = { Text(stringResource(R.string.option_pending_actions)) },
-						supportingContent = {
-							Text(
-								text = stringResource(
-									R.string.subtitle_pending_actions,
-									pendingActionCount
-								)
-							)
-						},
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 4)
-					)
-
 					SegmentedListItem(
 						onClick = dropUnlessResumed { backStack.add(Screen.Settings.DownloadedSongs) },
 						content = { Text(stringResource(R.string.action_browse_downloaded_music)) },
@@ -317,14 +215,14 @@ fun SettingsDataStorageScreen() {
 								) + downloadsSizeMb
 							)
 						},
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 4)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 3)
 					)
 
 					SegmentedListItem(
 						onClick = dropUnlessResumed { backStack.add(Screen.Settings.ImageCache) },
 						content = { Text(stringResource(R.string.action_browse_image_cache)) },
 						supportingContent = { Text(imageCacheSizeMb) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 3)
 					)
 
 					SegmentedListItem(
@@ -396,7 +294,99 @@ fun SettingsDataStorageScreen() {
 							}
 						},
 						trailingContent = offlineIcon,
-						shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 4)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 3)
+					)
+				}
+
+				SettingsGroup(title = { Text(stringResource(R.string.title_recommendation_cache)) }) {
+					SegmentedListItem(
+						onClick = {
+							if (downloadCount == 0) {
+								snackBarManager.notify(R.string.info_no_downloaded_songs)
+							} else if (!viewModel.startSonicSimilarityPrefetch()) {
+								snackBarManager.notify(R.string.notice_sonic_prefetch_unavailable)
+							}
+						},
+						enabled = isOnline
+							&& serverCapabilities.sonicSimilarityAvailable
+							&& !sonicPrefetchState.isRunning,
+						content = { Text(stringResource(R.string.action_prefetch_similar_songs)) },
+						supportingContent = {
+							Column(Modifier.fillMaxWidth()) {
+								Text(
+									text = if (sonicPrefetchState.isRunning) {
+										stringResource(
+											R.string.info_sonic_prefetch_progress,
+											sonicPrefetchState.processed,
+											sonicPrefetchState.total,
+											sonicPrefetchState.failed
+										)
+									} else {
+										stringResource(
+											R.string.subtitle_prefetch_similar_songs,
+											sonicCachedSeedCount,
+											sonicCachedRelationCount
+										)
+									}
+								)
+								AnimatedVisibility(
+									visible = sonicPrefetchState.isRunning,
+									enter = fadeIn() + expandVertically(clip = false),
+									exit = fadeOut() + shrinkVertically(clip = false)
+								) {
+									Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+										Row(
+											modifier = Modifier.fillMaxWidth(),
+											horizontalArrangement = Arrangement.SpaceBetween,
+											verticalAlignment = Alignment.CenterVertically
+										) {
+											TextButton(
+												onClick = { viewModel.cancelSonicSimilarityPrefetch() },
+												contentPadding = PaddingValues(
+													horizontal = 8.dp,
+													vertical = 0.dp
+												)
+											) {
+												Text(
+													stringResource(R.string.action_cancel),
+													style = MaterialTheme.typography.labelLarge,
+													color = MaterialTheme.colorScheme.error
+												)
+											}
+											Text(
+												text = "${sonicPrefetchState.processed}/${sonicPrefetchState.total}",
+												style = MaterialTheme.typography.labelMedium,
+												color = MaterialTheme.colorScheme.primary
+											)
+										}
+										LinearProgressIndicator(
+											progress = {
+												if (sonicPrefetchState.total == 0) 1f
+												else sonicPrefetchState.processed.toFloat() / sonicPrefetchState.total
+											},
+											modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+										)
+									}
+								}
+							}
+						},
+						trailingContent = offlineIcon,
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 2)
+					)
+					SegmentedListItem(
+						onClick = viewModel::clearSonicSimilarityCache,
+						enabled = sonicCachedRelationCount > 0 && !sonicPrefetchState.isRunning,
+						content = { Text(stringResource(R.string.action_clear_similar_song_cache)) },
+						supportingContent = {
+							Text(
+								stringResource(
+									R.string.subtitle_clear_similar_song_cache,
+									sonicCachedRelationCount
+								)
+							)
+						},
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 2),
+						colors = SegmentedListItemDefaults.segmentedErrorColors()
 					)
 				}
 

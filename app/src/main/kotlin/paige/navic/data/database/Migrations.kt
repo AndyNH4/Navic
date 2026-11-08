@@ -36,3 +36,21 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
 		)
 	}
 }
+
+val MIGRATION_23_24 = object : Migration(23, 24) {
+	override suspend fun migrate(connection: SQLiteConnection) {
+		connection.execSQL(
+			"CREATE TABLE IF NOT EXISTS `SonicSimilarityEntity` (" +
+				"`seedSongId` TEXT NOT NULL, " +
+				"`songId` TEXT NOT NULL, " +
+				"`position` INTEGER NOT NULL, " +
+				"`updatedAt` INTEGER NOT NULL, " +
+				"PRIMARY KEY(`seedSongId`, `songId`), " +
+				"FOREIGN KEY(`seedSongId`) REFERENCES `SongEntity`(`songId`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+				"FOREIGN KEY(`songId`) REFERENCES `SongEntity`(`songId`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+		)
+		connection.execSQL(
+			"CREATE INDEX IF NOT EXISTS `index_SonicSimilarityEntity_songId` ON `SonicSimilarityEntity` (`songId`)"
+		)
+	}
+}

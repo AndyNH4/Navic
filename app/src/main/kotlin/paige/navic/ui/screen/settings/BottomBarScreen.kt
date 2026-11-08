@@ -53,7 +53,7 @@ fun BottomBarScreen() {
 	Scaffold(
 		topBar = {
 			NestedTopBar(
-				title = { Text(stringResource(R.string.title_bottom_app_bar)) },
+				title = { Text(stringResource(R.string.title_navigation)) },
 				navigationAction = {
 					if (!hideBack) {
 						NestedTopBarDefaults.NavigationAction()
@@ -122,6 +122,7 @@ fun BottomBarScreen() {
 					)
 					SettingsToggleItem(
 						content = { Text(stringResource(R.string.option_swipe_to_skip)) },
+						supportingContent = { Text(stringResource(R.string.subtitle_swipe_to_skip)) },
 						checked = preferenceManager.swipeToSkip,
 						onCheckedChange = { preferenceManager.swipeToSkip = it },
 						shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 4)

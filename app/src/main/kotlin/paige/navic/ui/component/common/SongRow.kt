@@ -9,6 +9,7 @@ package paige.navic.ui.component.common
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -97,7 +98,7 @@ fun SongRow(
 
 	ListItem(
 		modifier = modifier
-			.width(400.dp)
+			.fillMaxWidth()
 			.alpha(if (isExplicit) .5f else 1f)
 			.combinedClickable(
 				onClick = onClick,

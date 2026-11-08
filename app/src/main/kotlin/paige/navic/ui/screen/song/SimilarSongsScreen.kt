@@ -32,6 +32,7 @@ import paige.navic.di.LocalNavStack
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.model.DomainSong
 import paige.navic.shared.MediaPlayerViewModel
+import paige.navic.ui.component.common.ContentUnavailable
 import paige.navic.ui.component.dialog.QueueDuplicateDialog
 import paige.navic.ui.component.layout.NestedTopBar
 import paige.navic.ui.component.layout.PullToRefreshBox
@@ -42,7 +43,9 @@ import paige.navic.ui.screen.share.dialog.ShareDialog
 import paige.navic.ui.screen.song.component.songListScreenContent
 import paige.navic.ui.screen.song.viewmodel.SimilarSongsViewModel
 import paige.navic.ui.util.withoutTop
+import paige.navic.util.toReadableDateTime
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 @Composable
 fun SimilarSongsScreen(
@@ -56,6 +59,8 @@ fun SimilarSongsScreen(
 	val player = koinInject<MediaPlayerViewModel>()
 	val backStack = LocalNavStack.current
 	val songsState by viewModel.songsState.collectAsStateWithLifecycle()
+	val similarityResult by viewModel.similarityResult.collectAsStateWithLifecycle()
+	val cacheMiss by viewModel.cacheMiss.collectAsStateWithLifecycle()
 	val selectedSong by viewModel.selectedSong.collectAsStateWithLifecycle()
 	val starred by viewModel.starred.collectAsStateWithLifecycle()
 	val selectedSongRating by viewModel.selectedSongRating.collectAsStateWithLifecycle()
@@ -86,7 +91,29 @@ fun SimilarSongsScreen(
 				else Arrangement.spacedBy(12.dp),
 				state = rememberLazyListState()
 			) {
-				songListScreenContent(
+				if (cacheMiss) {
+						item {
+							ContentUnavailable(
+								label = stringResource(R.string.info_no_cached_similar_songs)
+							)
+						}
+					} else {
+						similarityResult?.takeIf { it.fromCache }?.let { result ->
+							item {
+								Text(
+									text = result.updatedAt?.let { updatedAt ->
+										stringResource(
+											R.string.info_similar_songs_cached,
+											Instant.fromEpochMilliseconds(updatedAt).toReadableDateTime()
+										)
+									} ?: stringResource(R.string.info_similar_songs_cached_unknown_time),
+									style = MaterialTheme.typography.labelMedium,
+									color = MaterialTheme.colorScheme.onSurfaceVariant,
+									modifier = Modifier.padding(horizontal = 16.dp)
+								)
+							}
+						}
+						songListScreenContent(
 					state = songsState,
 					selectedSongIsStarred = starred,
 					selectedSongRating = selectedSongRating,
@@ -125,6 +152,7 @@ fun SimilarSongsScreen(
 					onCancelDownload = { viewModel.cancelDownload(it.id) },
 					onDeleteDownload = { viewModel.deleteDownload(it.id) }
 				)
+					}
 			}
 		}
 	}

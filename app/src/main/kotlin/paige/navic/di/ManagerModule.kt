@@ -30,6 +30,7 @@ import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.ShareManager
 import paige.navic.domain.manager.SleepTimerManager
 import paige.navic.domain.manager.SnackBarManager
+import paige.navic.domain.manager.SonicSimilarityPrefetchManager
 import paige.navic.domain.manager.StorageManager
 import paige.navic.domain.manager.SyncManager
 import paige.navic.domain.manager.UpdateManager
@@ -58,6 +59,7 @@ val managerModule = module {
 	singleOf(::ShareManager)
 	singleOf(::SleepTimerManager)
 	singleOf(::SnackBarManager)
+	singleOf(::SonicSimilarityPrefetchManager)
 	singleOf(::StorageManager)
 	singleOf(::UpdateManager)
 	singleOf(::VoiceActionManager)

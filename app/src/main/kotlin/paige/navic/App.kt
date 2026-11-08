@@ -126,6 +126,7 @@ import paige.navic.ui.screen.settings.SettingsDownloadedSongsScreen
 import paige.navic.ui.screen.settings.SettingsEqualizerScreen
 import paige.navic.ui.screen.settings.SettingsImageCacheScreen
 import paige.navic.ui.screen.settings.SettingsLogsScreen
+import paige.navic.ui.screen.settings.SettingsLyricsScreen
 import paige.navic.ui.screen.settings.SettingsNowPlayingScreen
 import paige.navic.ui.screen.settings.SettingsPlaybackScreen
 import paige.navic.ui.screen.settings.SettingsScreen
@@ -476,6 +477,9 @@ private fun entryProvider(
 		entry<Screen.Settings.NowPlaying>(metadata = detailPane("settings")) {
 			SettingsNowPlayingScreen()
 		}
+		entry<Screen.Settings.Lyrics>(metadata = detailPane("settings")) {
+			SettingsLyricsScreen()
+		}
 		entry<Screen.Settings.Widgets>(metadata = detailPane("settings")) {
 			WidgetSettingsScreen()
 		}
@@ -500,7 +504,7 @@ private fun entryProvider(
 		entry<Screen.Settings.Themes> {
 			SettingsThemesScreen()
 		}
-		entry<Screen.Settings.ConnectionOptions> {
+		entry<Screen.Settings.ConnectionOptions>(metadata = detailPane("settings")) {
 			SettingsConnectionOptionsScreen()
 		}
 		entry<Screen.Settings.CustomHeaders> {

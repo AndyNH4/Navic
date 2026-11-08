@@ -18,6 +18,7 @@ import kotlinx.collections.immutable.persistentListOf
 import paige.navic.domain.model.DomainAlbumListType
 import paige.navic.domain.model.DomainArtistListType
 import paige.navic.domain.model.DomainSongListType
+import paige.navic.domain.model.settings.ListViewMode
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Sort
 import paige.navic.ui.component.sheet.SortSheet
@@ -34,8 +35,12 @@ fun StarredScreenSortButton(
 	albumReversed: Boolean,
 	onSetAlbumSorting: (DomainAlbumListType) -> Unit,
 	onSetAlbumReversed: (Boolean) -> Unit,
+	albumViewMode: ListViewMode,
+	onSetAlbumViewMode: (ListViewMode) -> Unit,
 	artistSorting: DomainArtistListType,
-	onSetArtistSorting: (DomainArtistListType) -> Unit
+	onSetArtistSorting: (DomainArtistListType) -> Unit,
+	artistViewMode: ListViewMode,
+	onSetArtistViewMode: (ListViewMode) -> Unit
 ) {
 	val songEntries = remember {
 		persistentListOf(
@@ -92,6 +97,8 @@ fun StarredScreenSortButton(
 				onSetSorting = onSetAlbumSorting,
 				selectedReversed = albumReversed,
 				onSetReversed = onSetAlbumReversed,
+				selectedViewMode = albumViewMode,
+				onSetViewMode = onSetAlbumViewMode,
 				onDismissRequest = { expanded = false }
 			)
 
@@ -100,6 +107,8 @@ fun StarredScreenSortButton(
 				label = { stringResource(it.displayName) },
 				selectedSorting = artistSorting,
 				onSetSorting = onSetArtistSorting,
+				selectedViewMode = artistViewMode,
+				onSetViewMode = onSetArtistViewMode,
 				onDismissRequest = { expanded = false }
 			)
 		}

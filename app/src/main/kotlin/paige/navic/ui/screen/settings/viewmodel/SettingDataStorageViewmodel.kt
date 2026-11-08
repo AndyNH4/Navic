@@ -18,6 +18,7 @@ import paige.navic.data.database.dao.SyncActionDao
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.SyncManager
+import paige.navic.domain.manager.SonicSimilarityPrefetchManager
 import paige.navic.domain.repository.DbRepository
 import paige.navic.domain.repository.SongRepository
 
@@ -27,6 +28,7 @@ class SettingsDataStorageViewModel(
 	private val syncDao: SyncActionDao,
 	private val downloadManager: DownloadManager,
 	private val songRepository: SongRepository,
+	private val sonicSimilarityPrefetchManager: SonicSimilarityPrefetchManager,
 	connectivityManager: ConnectivityManager
 ) : ViewModel() {
 
@@ -50,6 +52,13 @@ class SettingsDataStorageViewModel(
 	val isDownloadingLibrary = downloadManager.isDownloadingLibrary
 	val libraryDownloadProgress = downloadManager.libraryDownloadProgress
 	val isOnline = connectivityManager.isOnline
+	val sonicPrefetchState = sonicSimilarityPrefetchManager.state
+	val sonicCachedSeedCount = sonicSimilarityPrefetchManager.cachedSeedCount.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), 0
+	)
+	val sonicCachedRelationCount = sonicSimilarityPrefetchManager.cachedRelationCount.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), 0
+	)
 
 	init {
 		loadPendingActions()
@@ -94,5 +103,18 @@ class SettingsDataStorageViewModel(
 
 	fun cancelLibraryDownload() {
 		downloadManager.cancelAllActiveDownloads()
+	}
+
+	fun startSonicSimilarityPrefetch(): Boolean =
+		sonicSimilarityPrefetchManager.startPrefetch()
+
+	fun cancelSonicSimilarityPrefetch() {
+		sonicSimilarityPrefetchManager.cancelPrefetch()
+	}
+
+	fun clearSonicSimilarityCache() {
+		viewModelScope.launch(Dispatchers.IO) {
+			sonicSimilarityPrefetchManager.clearCache()
+		}
 	}
 }

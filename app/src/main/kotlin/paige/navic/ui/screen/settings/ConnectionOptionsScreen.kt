@@ -6,16 +6,28 @@
 
 package paige.navic.ui.screen.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
@@ -24,30 +36,44 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import paige.navic.R
 import paige.navic.di.LocalNavStack
+import paige.navic.di.LocalSizeClass
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.SnackBarManager
+import paige.navic.icons.Icons
+import paige.navic.icons.outlined.Offline
+import paige.navic.ui.component.common.SegmentedListItem
 import paige.navic.ui.component.common.SegmentedListItemDefaults
 import paige.navic.ui.component.layout.NestedTopBar
+import paige.navic.ui.component.layout.NestedTopBarDefaults
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screen.settings.component.SettingsGroup
 import paige.navic.ui.screen.settings.component.SettingsGroupDefaults
 import paige.navic.ui.screen.settings.component.SettingsNavItem
 import paige.navic.ui.screen.settings.component.SettingsToggleItem
+import paige.navic.ui.screen.settings.viewmodel.SettingsDataStorageViewModel
 import paige.navic.util.PROXY_URL_REGEX
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Composable
 fun SettingsConnectionOptionsScreen() {
 	val backStack = LocalNavStack.current
+	val sizeClass = LocalSizeClass.current
+	val hideBack = sizeClass.widthSizeClass >= WindowWidthSizeClass.Medium &&
+		backStack.any { it is Screen.Settings.Root }
 
+	val viewModel = koinViewModel<SettingsDataStorageViewModel>()
 	val sessionManager = koinInject<SessionManager>()
 	val preferenceManager = koinInject<PreferenceManager>()
 	val snackBarManager = koinInject<SnackBarManager>()
@@ -57,6 +83,9 @@ fun SettingsConnectionOptionsScreen() {
 	val activeInstanceUrl by sessionManager.activeInstanceUrl.collectAsStateWithLifecycle()
 	val isUsingBackupUrl by sessionManager.isUsingBackupUrl.collectAsStateWithLifecycle()
 	val serverCapabilities by sessionManager.serverCapabilities.collectAsStateWithLifecycle()
+	val syncState by viewModel.syncState.collectAsStateWithLifecycle()
+	val pendingActionCount by viewModel.pendingActionCount.collectAsStateWithLifecycle()
+	val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
 	var primaryUrlField by mutableStateOf(sessionManager.primaryUrl())
 	val primaryUrlHasErrors by derivedStateOf {
@@ -106,8 +135,48 @@ fun SettingsConnectionOptionsScreen() {
 		sessionManager.refreshClient()
 	}
 
+	val smoothSyncProgress by animateFloatAsState(
+		if (syncState.isSyncing) syncState.progress else 0f,
+		animationSpec = tween(durationMillis = 250, easing = EaseOut)
+	)
+	val offlineIcon = @Composable {
+		if (!isOnline) {
+			Icon(
+				Icons.Outlined.Offline,
+				stringResource(R.string.info_not_available_offline),
+				modifier = Modifier.size(20.dp)
+			)
+		}
+	}
+
+	@Composable
+	fun timeSinceLastSync(): String {
+		val time = preferenceManager.lastFullSyncTime
+		if (time == 0L) return stringResource(R.string.info_sync_never)
+
+		val duration = Clock.System.now() - Instant.fromEpochMilliseconds(time)
+		val minutes = duration.inWholeMinutes.toInt()
+		val hours = duration.inWholeHours.toInt()
+		val days = duration.inWholeDays.toInt()
+		return when {
+			minutes < 1 -> stringResource(R.string.info_sync_just_now)
+			hours < 1 -> pluralStringResource(R.plurals.count_minutes_ago, minutes, minutes)
+			days < 1 -> pluralStringResource(R.plurals.count_hours_ago, hours, hours)
+			else -> pluralStringResource(R.plurals.count_days_ago, days, days)
+		}
+	}
+
 	Scaffold(
-		topBar = { NestedTopBar({ Text(stringResource(R.string.option_connection_options)) }) }
+		topBar = {
+			NestedTopBar(
+				title = { Text(stringResource(R.string.title_connection_sync)) },
+				navigationAction = {
+					if (!hideBack) {
+						NestedTopBarDefaults.NavigationAction()
+					}
+				}
+			)
+		}
 	) { innerPadding ->
 		CompositionLocalProvider(
 			LocalMinimumInteractiveComponentSize provides 0.dp
@@ -166,10 +235,7 @@ fun SettingsConnectionOptionsScreen() {
 								supportingContent = {
 									Text(stringResource(R.string.info_active_server, activeInstanceUrl))
 								},
-								shapes = SegmentedListItemDefaults.segmentedShapes(
-									index = 0,
-									count = 1
-								),
+								shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 1),
 								onClick = dropUnlessResumed {
 									scope.launch {
 										if (!sessionManager.switchToOtherUrl()) {
@@ -180,8 +246,6 @@ fun SettingsConnectionOptionsScreen() {
 							)
 						}
 					}
-				}
-				if (isLoggedIn) {
 					SettingsGroup {
 						SettingsToggleItem(
 							checked = preferenceManager.navidromeEnhancementEnabled,
@@ -200,18 +264,15 @@ fun SettingsConnectionOptionsScreen() {
 										serverDescription.isBlank() -> stringResource(
 											R.string.info_navidrome_enhancement_not_detected
 										)
-
 										serverCapabilities.navidromeNativeAvailable
 											&& preferenceManager.navidromeEnhancementEnabled -> stringResource(
 											R.string.info_navidrome_enhancement_enabled,
 											serverDescription
 										)
-
 										serverCapabilities.navidromeNativeAvailable -> stringResource(
 											R.string.info_navidrome_enhancement_disabled,
 											serverDescription
 										)
-
 										else -> stringResource(
 											R.string.info_navidrome_enhancement_unavailable,
 											serverDescription
@@ -220,6 +281,68 @@ fun SettingsConnectionOptionsScreen() {
 								)
 							},
 							shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 1)
+						)
+					}
+					SettingsGroup(title = { Text(stringResource(R.string.title_sync_control)) }) {
+						SegmentedListItem(
+							onClick = {},
+							content = { Text(stringResource(R.string.option_live_status)) },
+							supportingContent = {
+								Column(Modifier.fillMaxWidth()) {
+									Text(stringResource(syncState.message))
+									AnimatedVisibility(
+										syncState.isSyncing,
+										enter = fadeIn() + expandVertically(clip = false),
+										exit = fadeOut() + shrinkVertically(clip = false)
+									) {
+										LinearProgressIndicator(
+											progress = {
+												if (!syncState.isSyncing) 1f
+												else smoothSyncProgress.coerceIn(0f, 1f)
+											},
+											modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+										)
+									}
+								}
+							},
+							trailingContent = offlineIcon,
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 5)
+						)
+						SegmentedListItem(
+							onClick = viewModel::triggerManualSync,
+							enabled = isOnline,
+							content = { Text(stringResource(R.string.action_trigger_sync)) },
+							supportingContent = { Text(stringResource(R.string.subtitle_trigger_sync)) },
+							trailingContent = offlineIcon,
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 5)
+						)
+						SettingsToggleItem(
+							checked = preferenceManager.syncServerPlayHistory,
+							onCheckedChange = { enabled ->
+								if (!serverCapabilities.navidromeNativeAvailable
+									|| !preferenceManager.navidromeEnhancementEnabled
+								) {
+									snackBarManager.notify(R.string.notice_navidrome_enhancement_unavailable)
+								} else {
+									preferenceManager.syncServerPlayHistory = enabled
+								}
+							},
+							content = { Text(stringResource(R.string.option_sync_server_play_history)) },
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 2, count = 5)
+						)
+						SegmentedListItem(
+							onClick = {},
+							content = { Text(stringResource(R.string.option_last_sync)) },
+							supportingContent = { Text(timeSinceLastSync()) },
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 3, count = 5)
+						)
+						SegmentedListItem(
+							onClick = {},
+							content = { Text(stringResource(R.string.option_pending_actions)) },
+							supportingContent = {
+								Text(stringResource(R.string.subtitle_pending_actions, pendingActionCount))
+							},
+							shapes = SegmentedListItemDefaults.segmentedShapes(index = 4, count = 5)
 						)
 					}
 				}
@@ -245,18 +368,12 @@ fun SettingsConnectionOptionsScreen() {
 						onCheckedChange = updateSslNoop,
 						content = { Text(stringResource(R.string.option_ignore_ssl_certificates)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_ignore_ssl_certificates)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(
-							index = 0,
-							count = 2
-						)
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 0, count = 2)
 					)
 					SettingsNavItem(
 						content = { Text(stringResource(R.string.option_custom_headers)) },
 						supportingContent = { Text(stringResource(R.string.subtitle_custom_headers)) },
-						shapes = SegmentedListItemDefaults.segmentedShapes(
-							index = 1,
-							count = 2
-						),
+						shapes = SegmentedListItemDefaults.segmentedShapes(index = 1, count = 2),
 						onClick = dropUnlessResumed {
 							if (Screen.Settings.CustomHeaders !in backStack) {
 								backStack.add(Screen.Settings.CustomHeaders)
