@@ -114,8 +114,8 @@ android {
 		applicationId = "com.andy.rezeener"
 		minSdk = libs.versions.android.minSdk.get().toInt()
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
-		versionCode = 8
-		versionName = "1.0.6"
+		versionCode = 9
+		versionName = "1.0.7"
 		multiDexEnabled = true
 
 		ndk {
@@ -208,9 +208,9 @@ androidComponents {
 		variant.outputs.forEach { output ->
 			if (output is VariantOutputImpl) {
 				output.outputFileName = if (fdroid) {
-					"Navic.fdroid.apk"
+					"Rezeener.fdroid.apk"
 				} else {
-					"Navic.apk"
+					"Rezeener.apk"
 				}
 			}
 		}

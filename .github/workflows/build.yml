@@ -77,7 +77,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v6
         with:
-          name: navic-release-android
+          name: rezeener-release-android
           path: ./*.apk
           compression-level: 0
           if-no-files-found: ignore
@@ -137,11 +137,11 @@ jobs:
           shopt -s nullglob globstar
 
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" **/*.apk \
+            gh release upload "$GITHUB_REF_NAME" **/Rezeener.apk \
               --repo "$GITHUB_REPOSITORY" \
               --clobber
           else
-            gh release create "$GITHUB_REF_NAME" **/*.apk \
+            gh release create "$GITHUB_REF_NAME" **/Rezeener.apk \
               --repo "$GITHUB_REPOSITORY" \
               --title "$GITHUB_REF_NAME" \
               --draft --generate-notes

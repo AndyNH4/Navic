@@ -42,6 +42,18 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 7. **字符串**：`values/strings.xml`（英文 Tab 缩进）+ `values-zh-rCN` / `values-zh-rTW`（4 空格）。**新功能必须同时补三种语言**。
 8. **BuildInfo 在 `paige.navic.generated` 包**（不是 paige.navic）。
 
+## 界面与设置整合规范
+
+以下规则适用于新页面和对既有页面的修改，避免按功能迭代时再次产生一套页面一套样式：
+
+1. **组件复用**：竖向专辑/艺术家/歌单网格统一使用 `ArtGrid` / `ArtGridItem` 或其领域包装组件；`ArtCarouselItem` 仅用于横向轮播。歌曲列表优先复用公共 `SongRow`，场景差异通过参数或轻量包装实现，禁止复制一套仅样式不同的歌曲行。
+2. **响应式尺寸**：媒体行默认填充可用宽度；网格列数必须服从手机 `gridSize` 或宽屏 `artGridItemSize`。新增页面不得使用固定 400dp 歌曲行、固定 150dp 网格卡片或无理由的固定两列布局。
+3. **视觉与交互一致**：封面形状、字体、颜色、圆角和间距优先使用 `MaterialTheme`、`CoverArt` 与现有 defaults；同一实体的点击、长按、Sheet、星标、评分、下载和分享行为不因入口不同而改变。合理的详情页音轨序号等情境差异可以保留。
+4. **视图模式**：支持网格/列表的资料库类页面使用 `ListViewMode` 和 `SortSheet` 的既有能力；特定页面的独立视图偏好只追加新键，不改写或复用会造成互相覆盖的已有键。
+5. **设置唯一归属**：新增设置先归入设置首页的现有类别，同一偏好只保留一个设置入口；歌词相关选项统一进入独立“歌词”页，不再混入“当前播放”或“播放”。条件子项必须呈现真实依赖状态，并正确计算可见项的分段圆角。
+6. **导航与文案**：新设置页同时注册路由和双栏 detail pane，验证手机返回与平板切换；新增或调整文案必须同步英文、简体中文、繁体中文，并让副标题准确反映页内能力。
+7. **验收要求**：涉及媒体组件或设置信息架构的改动，至少验证手机与宽屏、网格与列表（若支持）、一种 Material 与一种非 Material 主题，以及相关偏好的重启持久化。
+
 ## 构建与环境
 
 - 命令：`./gradlew :app:assembleDebug`（debug）/ `:app:assembleRelease`（签名 release）
@@ -51,11 +63,16 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 
 ## 发布流程（每次发版）
 
-1. `app/build.gradle.kts` 改 `versionName`/`versionCode`（递增）
-2. `./gradlew :app:assembleRelease` → `app/build/outputs/apk/release/Navic.apk`（keystore.properties 提供签名，**密钥库文件勿提交、务必备份**）
-3. commit + `git push Navic main`
-4. GitHub 上建 Release：tag `v<versionName>`（如 v1.0.3），写更新日志，上传 APK 为 `Rezeener.apk`
-5. 应用内更新检查读取 `api.github.com/repos/AndyNH4/Navic/releases/latest` 的版本数字比较触发；应用内可直接下载安装（UpdateManager）
+统一使用**标签触发 CI、草稿审核后发布**的流程，不再并行维护一套手动上传步骤：
+
+1. `app/build.gradle.kts` 改 `versionName`/`versionCode`（递增），同步更新 `docs/DEVELOPMENT_LOG.md` 与本文件状态；新功能必须补齐英文/简中/繁中。
+2. 顺序运行 `./gradlew :app:assembleDebug` 和 `./gradlew :app:assembleRelease`。Release 产物为 `app/build/outputs/apk/release/Rezeener.apk`（`keystore.properties` 或 CI 签名环境变量提供签名，**密钥库文件勿提交、务必备份**）。
+3. 验证 APK 的 `applicationId`、版本号与签名：`apksigner verify --print-certs app/build/outputs/apk/release/Rezeener.apk`。
+4. 按功能提交改动，**排除本机 `gradle/wrapper/gradle-wrapper.properties` 镜像补丁**；`git push Navic main`，创建 `v<versionName>` 标签并推送标签。
+5. 标签触发 `.github/workflows/build.yml`：构建标准版与 F-Droid 版，产出 `Rezeener.apk` / `Rezeener.fdroid.apk`，并创建同标签的**草稿 Release**。Release 只附标准版 `Rezeener.apk`，F-Droid 版保留为 Actions artifact，避免应用内更新器误选变体。检查 Actions 与资产后，在草稿中整理中文更新日志并正式发布；不要重复手动上传同名资产。
+6. 发布后确认 `api.github.com/repos/AndyNH4/Navic/releases/latest` 返回新版本且资产可下载。应用内更新检查读取该接口；只有非草稿、非预发布的 Release 才会成为 latest。
+
+若 CI 不可用，唯一回退是复用第 2 步的本地签名 APK，在同一标签的草稿中上传 `Rezeener.apk`，再按第 5–6 步发布与验证。
 
 ## 多 Agent 协作建议
 
@@ -65,18 +82,18 @@ Kotlin（100%）+ Jetpack Compose（Material 3 Expressive）+ media3/ExoPlayer 1
 - 每个任务结束必须 `./gradlew :app:assembleDebug` 验证 + 中文词条补齐 + 按功能拆 commit（英文 conventional commits）
 - 真机验证优先；无真机时至少做解析器/迁移等可本地自验的部分
 
-## 当前功能状态（截至 v1.0.4.1）
+## 当前功能状态（截至 v1.0.7）
 
 另见：[开发日志](docs/DEVELOPMENT_LOG.md)（逐项改动结果与遗留风险）。
 
-- **连接**：主备双 URL 故障转移、启动自动探测、服务器不可达自动离线/恢复、代理/自定义头/SSL
+- **连接**：主备双 URL 故障转移、启动自动探测、服务器不可达自动离线/恢复、代理/自定义头/SSL；连接与同步设置集中管理
 - **播放**：双腿 crossfade（等功率）、均衡器（按会话双挂）、ReplayGain、变速、睡眠定时、FFmpeg 扩展（Linux 构建时）
 - **投屏**：Chromecast（setPlayer 热切换）
 - **离线**：离线下载/全库下载、离线模糊搜索、收藏集 pin 自动下载新增歌曲、孤儿下载记录恢复
-- **浏览**：专辑/艺术家/曲目/歌单/流派/电台/文件夹/最爱（分段+排序+滑动+下载全部）
-- **发现**：Tuned In 7 种混音、AudioMuse-AI 相似推荐
+- **浏览**：专辑/艺术家/曲目/歌单/流派/电台/文件夹/最爱（分段+排序+滑动+下载全部）；最爱专辑/艺术家支持独立网格/列表模式并复用公共响应式组件
+- **发现**：Tuned In 7 种混音、AudioMuse-AI 相似推荐（本地缓存、离线回退、已下载歌曲预取与缓存管理）
 - **统计**：本地播放事件热力图、连续打卡、Top 榜
-- **歌词**：逐字卡拉 OK（方/尖括号两种格式）、`[tr]` 双语（宽容配对 + 强制刷新）、逐字放大
+- **歌词**：逐字卡拉 OK（方/尖括号两种格式）、`[tr]` 双语（宽容配对 + 强制刷新）、逐字放大；独立歌词设置页管理来源、翻译和动态效果
 - **其他**：书签续播（服务端）、语音搜索、响应式桌面小组件（正在播放/队列/快捷播放）、Android Auto、完整简繁中文
 - **更新**：GitHub Releases 自动/手动检查 + 应用内下载安装
 

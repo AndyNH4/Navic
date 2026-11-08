@@ -52,20 +52,21 @@ tar -xzf /tmp/media3.tar.gz -C Navic/androidx-media --strip-components=1
 
 ```bash
 cd Navic && ./gradlew :app:assembleDebug
-# APK: Navic/app/build/outputs/apk/debug/Navic.apk
-adb install -r Navic/app/build/outputs/apk/debug/Navic.apk
+# APK: Navic/app/build/outputs/apk/debug/Rezeener.apk
+adb install -r Navic/app/build/outputs/apk/debug/Rezeener.apk
 ```
 
-## 8. Release 构建与签名（Rezeener 1.0.0）
+## 8. Release 构建与签名
 
-- 应用身份：`applicationId = com.andy.rezeener`（与 Navic 官方版可共存安装），版本 1.0.0 (versionCode 1)，应用名 Rezeener（debug 为 Rezeener (Dev)），deep link scheme `rezeener://`
-- **签名密钥库**：`Navic/rezeener-release.keystore`（4096 位 RSA，有效期 30 年），凭证在 `Navic/keystore.properties`——两个文件都已 gitignore，**务必自行备份到安全位置**，丢失将无法发布同一应用的更新
+- 应用身份：`applicationId = com.andy.rezeener`（与 Navic 官方版可共存安装），应用名 Rezeener（debug 为 Rezeener (Dev)），deep link scheme `rezeener://`；版本号与递增的 `versionCode` 以 `app/build.gradle.kts` 为准。
+- **签名密钥库**：`Navic/rezeener-release.keystore`（4096 位 RSA，有效期 30 年），凭证在 `Navic/keystore.properties`——两个文件都已 gitignore，**务必自行备份到安全位置**，丢失将无法发布同一应用的更新。
 - 构建（release 默认 R8 全量混淆 + 资源压缩，首次较慢）：
 
 ```bash
 cd Navic && ./gradlew :app:assembleRelease
-# 签名 APK: Navic/app/build/outputs/apk/release/Navic.apk
+# 签名 APK: Navic/app/build/outputs/apk/release/Rezeener.apk
 ```
 
-- 签名配置优先读 `keystore.properties`，也兼容 CI 环境变量（`SIGNING_STORE_FILE` / `SIGNING_STORE_PASSWORD` / `SIGNING_KEY_ALIAS` / `SIGNING_KEY_PASSWORD`）
-- 验证签名：`"E:\Android\Sdk\build-tools\37.0.0\apksigner.bat" verify --print-certs app/build/outputs/apk/release/Navic.apk`
+- 签名配置优先读 `keystore.properties`，也兼容 CI 环境变量（`SIGNING_STORE_FILE` / `SIGNING_STORE_PASSWORD` / `SIGNING_KEY_ALIAS` / `SIGNING_KEY_PASSWORD`）。
+- 验证签名：`"E:\Android\Sdk\build-tools\37.0.0\apksigner.bat" verify --print-certs app/build/outputs/apk/release/Rezeener.apk`。
+- 正式发布统一走标签触发 CI、草稿审核后发布的流程；标准版与 F-Droid 产物名分别为 `Rezeener.apk` 和 `Rezeener.fdroid.apk`。完整步骤见 [AGENTS.md](../AGENTS.md#发布流程每次发版)。

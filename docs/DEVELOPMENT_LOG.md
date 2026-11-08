@@ -1,12 +1,12 @@
 # Rezeener 开发日志
 
-> 记录 Rezeener 从需求评审到 v1.0.4 的全部功能改动、关键修复与遗留风险，供后续开发与多 Agent 协作查阅。
+> 记录 Rezeener 从需求评审到 v1.0.7 的功能改动、关键修复与遗留风险，供后续开发与多 Agent 协作查阅。
 >
 > 相关文档：[AGENTS.md](../AGENTS.md)（开发指南）、[BUILDING.md](BUILDING.md)（构建环境）、[歌词格式标准.md](歌词格式标准.md)（歌词写法）。
 
 ## 1. 当前状态
 
-- 当前版本：**1.0.4.1 (versionCode 6)**，签名 release 包，应用内自动更新。
+- 当前版本：**1.0.7 (versionCode 9)**，签名 release 包，应用内自动更新。
 - 主分支：`main`（产品开发）；`master`（上游 Navic 同步基线）。
 - 应用身份：`com.andy.rezeener`，应用名 Rezeener，deep link `rezeener://`。
 - 代码基线：Navic（GPL-3.0）+ 自研功能，全部提交均有对应 commit 可回溯。
@@ -53,11 +53,11 @@
 |---|---|---|
 | Tuned In 为你调频 | 7 种混音（Right Now/Deep Cuts/Time Machine/Mix It Up/Favorites Radio/Genre Blend/Heavy Rotation），卡片定高 118dp 防跳动 | Right Now 依赖本地播放事件（新装库回退纯随机）；流派 LIKE 匹配有边界情况；`getSimilarSongsID3` 依赖服务端支持，失败回退随机 |
 | 本地听歌统计 | 播放事件表+热力图+连续打卡+Top 榜（4 周/6 个月/全部），可清空 | 缓存库若被破坏性重建则统计丢失（非关键数据）；外部流缺元数据时显示兜底文案 |
-| 最爱页 | 新增底栏 tab，曲目/专辑/艺术家分段、完整排序、滑动操作、下载全部、全量竖直展示、无返回键 | `SongRow` 宽屏固定 400dp、卡片固定 150dp（公共组件未改）；滑动确认弹窗仍沿用原队列语义 |
+| 最爱页 | 新增底栏 tab，曲目/专辑/艺术家分段、完整排序、滑动操作、下载全部；后续整合为公共响应式组件，专辑/艺术家支持独立网格/列表模式 | 歌曲保持列表语义；滑动确认弹窗仍沿用原队列语义，共享元素与视图切换需真机回归 |
 | 最爱排序扩展 | 曲目段新增标题、最近收藏；排序存独立 `starred*` 偏好 | 艺术家段受枚举限制仍只有 2 种；导航配置版本升级会重置自定义 tab 顺序 |
 | 书签续播 | 服务端书签（可跨设备），保存/列表/恢复/删除 | 仅 Song 类型；位置≥时长会 clamp 到结尾；老服务器不支持书签端点时保存失败；暂无备注编辑 UI |
 | 文件夹浏览 | 目录树逐级浏览、整目录播放/随机/入队、可配置 tab | 依赖服务器子目录 `mediaType`（老原版 Subsonic/Airsonic 可能解析失败）；文件夹曲目不进 Room，无星标/下载 |
-| AudioMuse-AI | 通过 Navidrome `sonicSimilarity` 插件获取相似歌曲，入口由服务器能力检测控制，沿用现有登录与主备 URL | 需服务端安装/启用插件并完成分析；插件自身配置错误仍会显示为页面错误 |
+| AudioMuse-AI | 通过 Navidrome `sonicSimilarity` 插件获取相似歌曲；新增 Room 本地缓存、离线/请求失败回退、已下载歌曲预取和缓存管理；数据库 v23→v24 有正式 Migration | 需服务端安装/启用插件并完成分析；无缓存离线时显示空态；预取覆盖与插件异常仍需真实服务器回归 |
 | Google Assistant 语音 | App Actions：歌/专辑/艺术家精确匹配才播放，歧义落搜索页 | 语音链路需 Play 商店 Internal Testing 才能完整验证；歌单/流派未覆盖；冷启动 controller 连接有潜在竞态 |
 
 ### 2.5 更新、发布与工程
@@ -73,6 +73,18 @@
 | 文档 | 中文 README、[AGENTS.md](../AGENTS.md)、[BUILDING.md](BUILDING.md)、[歌词格式标准.md](歌词格式标准.md)、本文档 | 上游 README 中针对 AI 的隐藏恶意注释已清除（其内容不实） |
 | 多 Agent 协作约定 | 按层分工、共享文件避让、禁止并发 Gradle 构建、必须构建验证+中文词条+分功能提交 | 并发编辑仍需人工协调；增量编译脏缓存时需 `--stop`+清 `app/build/kotlin/compileDebugKotlin` |
 
+### 2.6 界面、设置与发布整合（v1.0.7）
+
+| 功能 | 结果 | 遗留风险/注意事项 |
+|---|---|---|
+| 最爱页组件归一 | 歌曲行改为填充可用宽度；专辑/艺术家改用公共 `ArtGrid` 与既有 Grid/List 组件，新增独立视图偏好，默认仍为网格 | 需回归手机/宽屏、共享元素、长按 Sheet 与视图偏好持久化 |
+| 独立歌词设置 | 设置首页新增歌词页，集中管理来源、翻译、滚动、逐字/模拟效果、模糊、非活跃行与常亮；沿用既有偏好键 | 逐字子项依赖总开关；需用纯文本、逐行、逐字及 `[tr]` 歌词回归 |
+| 设置信息架构 | 首页按界面、播放服务、数据系统分组；新增连接与同步入口；当前播放移除歌词及重复滑动开关；存储页聚焦离线与缓存 | 连接页仍兼作登录前网络配置入口，需同时验证登录路径和平板双栏返回行为 |
+| 统一开发规范 | `AGENTS.md` 新增“界面与设置整合规范”，约束公共组件、响应式尺寸、视图模式、设置唯一归属、三语文案与验收矩阵 | 后续新增页面和设置项必须遵守，不能只依赖本次页面级修正 |
+| 统一发布流程 | 构建产物统一为 `Rezeener.apk` / `Rezeener.fdroid.apk`；标签触发 CI 构建并生成草稿，Release 只附标准版，核对中文说明后正式发布 | F-Droid 版保留为 Actions artifact，避免更新器取到错误变体；本地 wrapper 镜像补丁不提交 |
+
+验证范围：`./gradlew :app:assembleDebug` 与 `./gradlew :app:assembleRelease` 均已通过；Release APK 已确认 `com.andy.rezeener`、`1.0.7 (9)` 和有效 V2 签名。三种目标语言资源均通过 XML 解析与新增键完整性检查；验证时无已连接 Android 设备，表中真机场景尚未执行。
+
 ## 3. 关键 bug 修复时间线
 
 1. **Crossfade 初版**：换曲无声（音量卡 0）→ 修复暂停误判与赋值顺序，并加音量复位安全网。
@@ -86,18 +98,19 @@
 ## 4. 当前未决事项（后续优先处理）
 
 1. **FFmpeg 原生解码**：Windows 本地构建仍缺 `libffmpegJNI.so`，如需 ALAC 等格式，需在 Linux/WSL 产出 `android-libs` 后自动启用。
-2. **真机回归覆盖**：Cast 实机、语音助手完整链路、crossfade 长时间连续播放、百万级曲库搜索与统计性能尚需更多实机数据。
-3. **小 UI 项**：宽屏下 `SongRow` 固定 400dp、专辑/艺术家卡片固定 150dp 的自适应可再优化；下载页可考虑按专辑分组。
+2. **真机回归覆盖**：Cast 实机、语音助手完整链路、crossfade 长时间连续播放、百万级曲库搜索与统计性能尚需更多实机数据；本次最爱页视图切换、歌词设置和平板设置导航也需真机回归。
+3. **小 UI 项**：下载页可考虑按专辑分组。
 4. **历史配置兼容性**：`NavbarConfig.VERSION` 每次新增 tab 都会重置一次自定义底栏，可评估改成合并式迁移。
 
 ## 5. 发布与验证清单（每次发版沿用）
 
-1. `app/build.gradle.kts` 更新 `versionName` / `versionCode`。
-2. `./gradlew :app:assembleDebug` 必须通过；随后 `./gradlew :app:assembleRelease` 产出签名 APK。
-3. 验证 APK 的 `applicationId`、版本号、V2 签名（`apksigner verify --print-certs`）。
-4. `git push Navic main`（若 git 协议不可达，使用 Git Data API 兜底）。
-5. GitHub Release：tag `v<versionName>`，中文更新日志，上传 `Rezeener.apk`。
-6. 验证 `releases/latest` 返回新版本，确保自动更新比较链有效。
+1. 更新 `versionName` / `versionCode`、开发日志与三语文案。
+2. 顺序执行 `:app:assembleDebug` 与 `:app:assembleRelease`，验证 `Rezeener.apk` 的应用 ID、版本和签名。
+3. 提交时排除本机 wrapper 镜像补丁；推送 `main` 和 `v<versionName>` 标签。
+4. 等待标签 CI 构建标准版/F-Droid 版并创建草稿，核对资产和中文更新日志后正式发布。
+5. 验证 `releases/latest` 返回新版本且资产可下载，确保应用内更新链有效。
+
+具体命令、产物路径和 CI 回退规则统一以 [AGENTS.md 发布流程](../AGENTS.md#发布流程每次发版) 为准。
 
 ---
 
