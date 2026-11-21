@@ -231,7 +231,8 @@ fun App() {
 				if (Screen.Library() !in backStack) backStack.add(Screen.Library())
 			}
 			is WidgetNavigationTarget.Collection -> {
-				backStack.add(Screen.CollectionDetail(target.id, target.tab))
+				val screen = Screen.CollectionDetail(target.id, target.tab)
+				if (screen !in backStack) backStack.add(screen)
 			}
 		}
 	}

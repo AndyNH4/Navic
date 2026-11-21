@@ -42,9 +42,11 @@ fun NowPlayingArtworkPager(
 	val player = koinInject<MediaPlayerViewModel>()
 	val playerState by player.uiState.collectAsState()
 
+	val hasValidCurrentPage = playerState.currentIndex in playerState.queue.indices
+		&& playerState.queue[playerState.currentIndex].id == playerState.currentSong?.id
 	val pagerState = rememberPagerState(
-		initialPage = playerState.currentIndex.coerceAtLeast(0),
-		pageCount = { playerState.queue.size }
+		initialPage = playerState.currentIndex.takeIf { hasValidCurrentPage } ?: 0,
+		pageCount = { if (hasValidCurrentPage) playerState.queue.size else 0 }
 	)
 	val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
 	var userSwiped by remember { mutableStateOf(false) }
@@ -53,8 +55,8 @@ fun NowPlayingArtworkPager(
 		if (isDragged) userSwiped = true
 	}
 
-	LaunchedEffect(playerState.currentIndex) {
-		if (!isDragged && playerState.currentIndex != -1 && playerState.currentIndex != pagerState.currentPage) {
+	LaunchedEffect(playerState.currentIndex, playerState.queue, hasValidCurrentPage) {
+		if (hasValidCurrentPage && !isDragged && playerState.currentIndex != pagerState.currentPage) {
 			pagerState.animateScrollToPage(playerState.currentIndex)
 		}
 	}

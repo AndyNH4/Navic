@@ -12,14 +12,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -28,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlin.time.Duration
@@ -47,9 +44,9 @@ import paige.navic.ui.screen.album.component.AlbumListScreenGridItem
 import paige.navic.ui.screen.album.component.AlbumListScreenListItem
 import paige.navic.ui.screen.artist.ArtistListScreenGridItem
 import paige.navic.ui.screen.artist.component.ArtistListScreenListItem
+import paige.navic.ui.screen.collection.component.CollectionDetailScreenFooterRow
 import paige.navic.ui.screen.collection.component.CollectionDetailScreenHeadingRowButtons
 import paige.navic.ui.util.withoutTop
-import paige.navic.util.toSummaryString
 
 @Composable
 fun StarredScreenContent(
@@ -164,22 +161,6 @@ fun StarredScreenContent(
 							state = songsListState,
 							contentPadding = innerPadding.withoutTop()
 						) {
-							item(key = "stats") {
-								Text(
-									pluralStringResource(
-										R.plurals.count_songs,
-										songs.size,
-										songs.size
-									) + " • " + totalDuration.toSummaryString(),
-									style = MaterialTheme.typography.bodyMedium,
-									color = MaterialTheme.colorScheme.onSurfaceVariant,
-									modifier = Modifier
-										.heightIn(min = 32.dp)
-										.padding(top = 8.dp)
-										.padding(horizontal = 16.dp)
-										.fillMaxWidth()
-								)
-							}
 							item(key = "buttons") {
 								CollectionDetailScreenHeadingRowButtons(starredCollection)
 							}
@@ -208,6 +189,9 @@ fun StarredScreenContent(
 									rating = selectedSongRating,
 									onSetRating = { onSetSongRating(it) }
 								)
+							}
+							item(key = "stats") {
+								CollectionDetailScreenFooterRow(starredCollection)
 							}
 						}
 					}

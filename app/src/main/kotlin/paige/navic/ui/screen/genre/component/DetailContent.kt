@@ -108,6 +108,7 @@ fun GenreDetailScreenContent(
 				itemsIndexed(songs) { index, song ->
 					val download = allDownloads.find { it.songId == song.id }
 					SongRow(
+						modifier = Modifier.width(400.dp),
 						song = song,
 						selected = selectedSong == song,
 						onClick = { onPlaySong(index) },

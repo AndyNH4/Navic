@@ -172,7 +172,14 @@ class AndroidMediaPlayerViewModel(
 			Logger.w("MediaPlayer", "could not resolve the controller queue")
 			return
 		}
-		_uiState.update { it.copy(queue = resolved) }
+		val currentIndex = player.currentMediaItemIndex.takeIf { it in resolved.indices } ?: -1
+		_uiState.update {
+			it.copy(
+				queue = resolved,
+				currentIndex = currentIndex,
+				currentSong = resolved.getOrNull(currentIndex)
+			)
+		}
 	}
 
 	/**
@@ -243,9 +250,18 @@ class AndroidMediaPlayerViewModel(
 		val index = controller.currentMediaItemIndex
 		if (index == C.INDEX_UNSET) return
 
+		val mediaItem = controller.currentMediaItem
 		val currentSong = _uiState.value.queue.getOrNull(index)
+			?.takeIf { it.id == mediaItem?.mediaId }
+			?: return
+		val artworkId = mediaItem?.mediaMetadata?.artworkUri?.getQueryParameter("id")
+		val displaySong = if (artworkId != null && artworkId != currentSong.coverArtId) {
+			currentSong.copy(coverArtId = artworkId)
+		} else {
+			currentSong
+		}
 
-		val derivedCollection = currentSong?.let { song ->
+		val derivedCollection = displaySong.let { song ->
 			val stateCollection = _uiState.value.currentCollection
 
 			if (stateCollection?.id == song.albumId.toString()) {
@@ -257,9 +273,17 @@ class AndroidMediaPlayerViewModel(
 		}
 
 		_uiState.update { state ->
+			val queue = if (displaySong === currentSong) {
+				state.queue
+			} else {
+				state.queue.mapIndexed { itemIndex, song ->
+					if (itemIndex == index) displaySong else song
+				}
+			}
 			state.copy(
+				queue = queue,
 				currentIndex = index,
-				currentSong = currentSong,
+				currentSong = displaySong,
 				currentCollection = derivedCollection ?: state.currentCollection,
 				isPaused = (!controller.playWhenReady || controller.playbackState == Player.STATE_ENDED),
 				isShuffleEnabled = controller.shuffleModeEnabled,
