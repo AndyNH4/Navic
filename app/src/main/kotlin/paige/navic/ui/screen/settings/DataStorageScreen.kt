@@ -164,7 +164,7 @@ fun SettingsDataStorageScreen() {
 				modifier = Modifier
 					.padding(innerPadding)
 					.verticalScroll(rememberScrollState())
-					.padding(horizontal = 16.dp),
+					.padding(horizontal = 16.dp).padding(bottom = 16.dp),
 				verticalArrangement = Arrangement.spacedBy(SettingsGroupDefaults.GapBetweenGroups)
 			) {
 				SettingsGroup(title = { Text(stringResource(R.string.title_network)) }) {

@@ -65,7 +65,7 @@ fun SettingsStreamingQualityScreen() {
 				modifier = Modifier
 					.padding(innerPadding)
 					.verticalScroll(rememberScrollState())
-					.padding(horizontal = 16.dp)
+					.padding(horizontal = 16.dp).padding(bottom = 16.dp)
 			) {
 				AnimatedVisibility(visible = !preferenceManager.isAdvancedTranscodingActive) {
 					SettingsGroup(

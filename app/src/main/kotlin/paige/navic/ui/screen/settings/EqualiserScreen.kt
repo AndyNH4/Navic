@@ -84,7 +84,7 @@ fun SettingsEqualizerScreen() {
 				modifier = Modifier
 					.padding(innerPadding)
 					.verticalScroll(rememberScrollState())
-					.padding(horizontal = 16.dp),
+					.padding(horizontal = 16.dp).padding(bottom = 16.dp),
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.spacedBy(SettingsGroupDefaults.GapBetweenGroups)
 			) {
