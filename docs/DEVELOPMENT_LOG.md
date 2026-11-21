@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-- 当前版本：**1.0.7 (versionCode 9)**，签名 release 包，应用内自动更新。
+- 当前版本：**1.1.0 (versionCode 10)**，签名 release 包，应用内自动更新。
 - 主分支：`main`（产品开发）；`master`（上游 Navic 同步基线）。
 - 应用身份：`com.andy.rezeener`，应用名 Rezeener，deep link `rezeener://`。
 - 代码基线：Navic（GPL-3.0）+ 自研功能，全部提交均有对应 commit 可回溯。
@@ -84,6 +84,74 @@
 | 统一发布流程 | 构建产物统一为 `Rezeener.apk` / `Rezeener.fdroid.apk`；标签触发 CI 构建并生成草稿，Release 只附标准版；新增四项签名 secret 与 `keytool` 预检 | F-Droid 版保留为 Actions artifact，避免更新器取到错误变体；本地 wrapper 镜像补丁不提交 |
 
 验证范围：`./gradlew :app:assembleDebug` 与 `./gradlew :app:assembleRelease` 均已通过；Release APK 已确认 `com.andy.rezeener`、`1.0.7 (9)` 和有效 V2 签名。三种目标语言资源均通过 XML 解析与新增键完整性检查；验证时无已连接 Android 设备，表中真机场景尚未执行。v1.0.7 标签 CI 因仓库未配置签名 secrets 而失败，最终按文档回退使用本地签名 APK 发布；后续标签会在构建前直接报告缺失项。
+
+### 2.7 艺术家与歌曲元数据
+
+**当前状态：代码完成；真实服务器与设备验收仍未全部完成。** 基础能力来自上游提交 `b03a3cfb`（多歌曲艺术家）和本地提交 `f87ba2ac`（艺术家分组），随后补齐显示回退、分组一致性、显式多语言别名和别名搜索。完整需求见根目录 `requirements.md` 的 2.11 节，工程门槛见 [开发标准](DEVELOPMENT_STANDARDS.md)。
+
+| 功能 | 实现结果 | 验证边界与遗留风险 |
+|---|---|---|
+| 歌曲多艺术家与回退 | 保留结构化艺术家和逐个链接；公共 `appendArtists` 在空列表时保留原始署名，空 ID / `unknown artist` 仅显示文本；迷你播放器和歌曲详情使用共享显示规则 | 不按分隔符猜拆身份；真实合作歌曲、旧协议服务与空 ID 场景尚未实测 |
+| 分组作品与查看全部 | 仓库集中聚合成员工专辑和歌曲并去重；列表 Sheet 复用规则；查看全部区分 `Albums` / `Participations`，旧 `ByArtist` 数据默认走兼容的 `All` | 大曲库下仍有逐成员查询，性能未验收；分组范围、空态和返回导航需设备回归 |
+| 分组成员收藏 | 单条 SQL 原子更新所有成员本地状态，每个服务端 ID 分别创建同步动作 | 评分和成员级部分失败反馈仍未实现；离线恢复与服务器结果待验证 |
+| 显式多语言别名 | 新增 `ArtistAliasEntity` / DAO，保存自定义名称和可选 BCP 47 标签；CacheDatabase 升级至 v25，带 v24→v25 正式 Migration、索引和导出 schema | 真实 v24 数据升级、唯一约束冲突和重启持久化仍需设备或迁移测试环境验证 |
+| 语言选择 | 固定显示名优先；显式标签按语言、文字和精确标签评分，自定义标签有优先级；未标名称保留字符推断，成员和别名查询顺序稳定 | 未标简繁名称不能可靠自动区分，应由用户补标签；各 Locale 组合和长名称仍需回归 |
+| 统一名称管理 | 所有艺术家均可进入管理对话框；支持固定/自动名称、别名增删改、主身份设置，单艺术家自动建立本地组；三语文案已补 | 无效标签使用现有分组错误提示；窄屏按钮布局、编辑冲突和返回行为需设备检查 |
+| 在线与离线别名搜索 | 离线查询别名表；在线在服务端结果外补充本地别名与固定显示名命中，再按分组身份去重 | 真实在线服务、排序和重复结果仍需回归；搜索预筛上限和性能要求不变 |
+| 拆组数据保护 | 多成员拆组时把自定义别名和固定显示名转移到主艺术家的单成员组；单成员别名组不显示拆组操作 | 缓存清理、导入导出和跨设备同步仍未实现；需要验证合并/拆组后的别名归属 |
+| 原始数据保真 | 本地别名不改变原始服务端字段，歌词查询、scrobble 和播放事件继续使用原始名称 | 歌曲署名本地化、统计归集及系统媒体表面的统一身份解析仍待后续完成 |
+
+验证结果：第一、第二阶段的 `:app:compileDebugKotlin` 与 `:app:assembleDebug` 均已通过；英文、简中、繁中 XML 均可解析，13 个新增资源键完整；SQLite 内存数据库已通过 v25 schema、同组不同语言别名和唯一约束冒烟检查；`git diff --check` 无错误。SQLite 冒烟检查不替代真实 Room v24→v25 升级测试。项目当前没有 `app/src/test` / `androidTest` 测试，不能把编译通过写成场景已验收；真实 Navidrome、旧协议服务、手机/宽屏、离线恢复和升级路径仍待执行。
+
+下一阶段：统一歌曲署名、统计和系统媒体表面的身份解析，验收真实迁移及大曲库性能，再评估歌曲—艺术家关系表规范化和本地整理导入导出。
+
+### 2.8 播放、收藏与设置界面修正（v1.1.0）
+
+| 功能 | 结果 | 遗留风险/注意事项 |
+|---|---|---|
+| 最爱歌曲统计 | 歌曲分段底部复用详情页 `CollectionDetailScreenFooterRow`，显示歌曲总数与总时长，移除原顶部自定义统计以避免重复 | `:app:assembleDebug` 已通过；列表底部实际显示与长列表滚动仍需设备确认 |
+| 横向歌曲 Grid 崩溃修复 | 艺术家和流派详情的横向 `SongRow` 显式设置 400dp 有限宽度，避免公共行改用 `fillMaxWidth()` 后收到无限宽度约束 | `:app:assembleDebug` 已通过；已安装 Debug 并实测 Adele 艺术家详情与国语流行流派详情，AndroidRuntime 无异常 |
+| 播放队列与封面状态 | 同步解析队列、当前索引和当前歌曲，必要时从媒体项恢复封面 ID；封面分页仅在当前页有效时显示，集合导航避免重复入栈 | 长队列恢复、Cast 切换和连续滑动仍需设备回归 |
+| 设置页底部间距 | 各设置页内容区增加底部 16dp 间距，避免最后一组贴底 | 手机/宽屏及不同主题下的视觉检查仍需补齐 |
+
+**v1.1.0 发布验证**：顺序执行 `./gradlew :app:assembleDebug` 与 `./gradlew :app:assembleRelease`，分别耗时 7m27s、11m38s，均 `BUILD SUCCESSFUL`。Release APK 确认为 `com.andy.rezeener`、`1.1.0 (10)`，V2 签名证书 SHA-256 为 `8f294b8adbddad12997d8ebd3ab447f893182ead97e9ca3c75204eb574dad544`，与 v1.0.7 一致；APK SHA-256 为 `e2e39a03ee7a3f14a69d53bd91a39ff58d622688c67450860317eab338b448cc`。三种目标语言资源均可解析，除统一不翻译的 `app_name` 外无缺失或多余键；`git diff --check` 无错误。项目没有 `app/src/test` / `androidTest` 自动化测试，真实服务器、实机数据库迁移及部分界面场景仍按上表保留待验证。
+
+发布前置检查确认 GitHub Actions 的 `KEYSTORE`、`KEY_ALIAS`、`KEY_PASSWORD`、`KEYSTORE_PASSWORD` 均未配置，因此本次按既定回退复用上述本地签名标准版 APK，不上传本机密钥，也不额外补发 F-Droid 产物。
+
+### 2.9 OriginOS 系统媒体能力预研
+
+**状态：OriginOS 6 直接音源识别已实测受阻；优先待 OriginOS 7 真机验证，官方准入未申请；未修改代码。** 完整需求与验收矩阵见根目录 `requirements.md` 的 2.10.7—2.10.8。
+
+当前实现已经具备基础媒体通知：`ExoPlaybackService` 使用 Media3 `DefaultMediaNotificationProvider`，`PlaybackMediaItemFactory` 提供曲名、艺术家、专辑、时长和封面，`ExoStateHolder` 提供随机与循环按钮，加上默认上一首、播放/暂停、下一首共五个操作。OriginOS 6 截图中的简化卡片符合系统标准媒体模板，不能把“已经显示通知和五项控制”写成视觉与进度适配完成。
+
+| 预研项 | 官方资料结论 | 产品边界 |
+|---|---|---|
+| 标准通知 | [OriginOS 通知样式规范](https://dev.vivo.com.cn/documentCenter/doc/577) 定义封面、标题、艺术家/专辑及最多五个按钮，推荐标准样式 | 保留 Media3 / MediaSession，类原生通知、锁屏和 Android Auto 不回归 |
+| 自定义通知 | [自定义通知适配规范](https://dev.vivo.com.cn/documentCenter/doc/901) 将媒体播放和进度提示列为禁止使用自定义通知的场景 | 不以 `RemoteViews` 自绘音乐卡或进度条绕过系统模板 |
+| 原子岛音乐 | [原子岛功能介绍](https://www.vivo.com.cn/service/questions/all?categoryId=170&questionId=1864) 说明音乐通过原子随身听呈现，播放后回到桌面可唤起；原子岛不显示歌词 | 优先验证标准 MediaSession 的音源识别；锁屏按原子随身听卡片验收，不做岛上歌词 |
+| 通用原子通知 | [原子通知技术规范](https://dev.vivo.com.cn/documentCenter/doc/896) 提供本地通知扩展、律动动画和进度模板 | 不能直接等同于音乐接口，不套用外卖、行程等实时任务模板模拟播放器 |
+| 官方准入 | [原子通知接入指导](https://dev.vivo.com.cn/documentCenter/doc/894) 要求先上架 vivo 应用商店，再申请、评审、联调并逐步放量 | 是否申请另行决策，未获得准入前不承诺原子岛能力 |
+| OriginOS 7 音源 | [OriginOS 官方微博](https://www.sina.cn/media/7506173780)在 2026-10-20 公布“控制中心 → 长按音乐播放控件 → 设置 → 更多设置 → 音源应用管理”的自定义入口 | 作为升级后的首选验证路径，不作为 OriginOS 6 已支持证据 |
+
+2026-11-21 通过用户截图和只读 ADB 命令完成真机核实：
+
+| 检查项 | 实测结果 |
+|---|---|
+| 设备与系统 | 用户提供机型为 vivo X100s；`ro.vivo.product.version=PD2359C_A_16.2.17.4.W10.V000L1`，`ro.vivo.os.build.display.id=OriginOS 6` |
+| 原子随身听 | `com.vivo.musicwidgetmix` 版本 `6.2.7.2` |
+| Rezeener MediaSession | 当前 `com.andy.rezeener.debug` 会话为 active，曲名、艺术家、位置、播放状态和队列均已发布；正式版与 Debug 均已安装 |
+| 系统音源配置 | `settings get system musicwidget_list_pkg_type_key` 返回 `["com.spotify.music"]`；音源页面也未提供 Rezeener |
+
+结论：标准 MediaSession 已正常注册，当前阻塞是 OriginOS 6 的系统音源准入，不是补充封面、时长或播放状态字段可以解决的问题。正式包名为 `com.andy.rezeener`，当前播放会话为带后缀的 `com.andy.rezeener.debug`，后续白名单或音源管理验收必须使用正式版，避免包名差异干扰结论。
+
+后续路径：
+
+1. **首选：OriginOS 7 升级验证**。[公开升级排期](https://news.qq.com/rain/a/20260916A0C41A00)中 X100s 位于 2026 年 11 月底批次，具体以设备推送为准。升级后通过官方微博所述音源应用管理添加正式版 Rezeener，再验收通知中心、返回桌面唤起、胶囊/展开卡、封面与曲目同步、播放控制和进度。
+2. **OriginOS 6 官方准入**：若必须支持当前系统，本次检索未找到 vivo 公开的音乐专用 SDK 或自助加白文档，应通过 vivo 开发者渠道确认原子随身听的音乐专用适配方式，并评估商店上架、申请、需求/UI 评审和联调成本；不能直接把通用原子通知流程当作已开放音乐接口。
+
+尚未验证：OriginOS 7 实际音源列表、系统媒体卡与原子随身听的视觉/进度及拖动能力、锁屏和原子岛表现。不得用 Root、Xposed、ADB 改白名单、伪造包名或私有反射替代产品适配；若后续需要厂商专有依赖，必须与普通版和 F-Droid 版隔离并保留标准通知回退。
+
+本轮 ADB 仅执行 `getprop`、`settings get` 和 `dumpsys` 只读检查，未修改任何系统设置。未运行 Gradle，未申请官方权限、未发送邮件，也未执行系统升级。
 
 ## 3. 关键 bug 修复时间线
 
