@@ -17,15 +17,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import paige.navic.R
-import paige.navic.data.database.dao.AlbumDao
 import paige.navic.data.database.dao.ArtistDao
 import paige.navic.data.database.dao.SongDao
+import paige.navic.data.database.entity.ArtistAliasEntity
 import paige.navic.data.database.entity.ArtistGroupEntity
 import paige.navic.data.database.entity.ArtistGroupMemberEntity
 import paige.navic.data.database.entity.DownloadStatus
@@ -54,7 +53,8 @@ data class ArtistState(
 	val participationSongs: List<DomainSong> = emptyList(),
 	val similarArtists: List<DomainArtist> = emptyList(),
 	val group: ArtistGroupEntity? = null,
-	val groupMembers: List<ArtistGroupMemberEntity> = emptyList()
+	val groupMembers: List<ArtistGroupMemberEntity> = emptyList(),
+	val aliases: List<ArtistAliasEntity> = emptyList()
 )
 
 class ArtistDetailViewModel(
@@ -64,7 +64,6 @@ class ArtistDetailViewModel(
 	private val songRepository: SongRepository,
 	private val albumRepository: AlbumRepository,
 	private val artistDao: ArtistDao,
-	private val albumDao: AlbumDao,
 	private val songDao: SongDao,
 	private val downloadManager: DownloadManager,
 	private val snackBarManager: SnackBarManager,
@@ -121,6 +120,7 @@ class ArtistDetailViewModel(
 			try {
 				val groupInfo = artistGroupManager.getGroupInfo(artistId)
 				val groupMembers = groupInfo?.members.orEmpty()
+				val groupAliases = groupInfo?.aliases.orEmpty()
 				val memberIds = groupMembers.map { it.artistId }.ifEmpty { listOf(artistId) }
 				val primaryArtistId = groupInfo?.group?.primaryArtistId ?: artistId
 				val participantSongEntities = memberIds
@@ -154,7 +154,7 @@ class ArtistDetailViewModel(
 						name = ArtistNameResolver.resolveDisplayName(
 							baseArtist,
 							groupMembers,
-							groupInfo.group
+							groupInfo.group, groupAliases
 						),
 						albumCount = if (groupArtists.isEmpty()) {
 							baseArtist.albumCount
@@ -165,23 +165,11 @@ class ArtistDetailViewModel(
 					)
 				}
 
-				val albumsWithSongs = memberIds.map { memberId ->
-					val artistAlbums = albumDao.getAlbumsByArtist(memberId).firstOrNull().orEmpty()
-					if (artistAlbums.isNotEmpty()) {
-						artistAlbums
-					} else {
-						val memberName = groupMembers.firstOrNull { it.artistId == memberId }?.name
-							?: baseArtist.name
-						albumDao.getAlbumsByArtistName(memberName).firstOrNull().orEmpty()
-					}
-				}.flatten().distinctBy { it.album.albumId }
+				val domainAlbums = artistRepository.getArtistAlbums(domainArtist)
+				val ownSongs = domainAlbums.flatMap { it.songs }.distinctBy { it.id }
+				val ownSongIds = ownSongs.map { it.id }.toSet()
 
-				val domainAlbums = albumsWithSongs.map { it.toDomainModel() }
-				val ownSongEntities = albumsWithSongs.flatMap { it.songs }.distinctBy { it.songId }
-				val ownSongIds = ownSongEntities.map { it.songId }.toSet()
-
-				val domainSongs = ownSongEntities
-					.map { it.toDomainModel() }
+				val domainSongs = ownSongs
 					.sortedByDescending { it.playCount }
 					.take(12)
 				val participationSongs = participantSongEntities
@@ -206,7 +194,8 @@ class ArtistDetailViewModel(
 						participationSongs = participationSongs,
 						similarArtists = initialSimilarArtists,
 						group = groupInfo?.group,
-						groupMembers = groupMembers
+						groupMembers = groupMembers,
+						aliases = groupAliases
 					)
 				)
 
@@ -226,7 +215,7 @@ class ArtistDetailViewModel(
 									name = ArtistNameResolver.resolveDisplayName(
 										updatedArtist,
 										groupMembers,
-										groupInfo.group
+										groupInfo.group, groupAliases
 									),
 									albumCount = currentState.artist.albumCount,
 									starredAt = currentState.artist.starredAt
@@ -357,10 +346,42 @@ class ArtistDetailViewModel(
 		}
 	}
 
-	fun setPreferredName(name: String) {
+	fun setPreferredName(name: String?) {
+		viewModelScope.launch {
+			runCatching { artistGroupManager.setPreferredNameForArtist(artistId, name) }
+				.onSuccess { loadArtistData() }
+				.onFailure { snackBarManager.notify(R.string.error_artist_group_action_failed) }
+		}
+	}
+
+	fun addAlias(name: String, languageTag: String) {
+		viewModelScope.launch {
+			runCatching { artistGroupManager.addAlias(artistId, name, languageTag) }
+				.onSuccess { loadArtistData() }
+				.onFailure { snackBarManager.notify(R.string.error_artist_group_action_failed) }
+		}
+	}
+
+	fun updateAlias(aliasId: Long, name: String, languageTag: String) {
+		viewModelScope.launch {
+			runCatching { artistGroupManager.updateAlias(aliasId, name, languageTag) }
+				.onSuccess { loadArtistData() }
+				.onFailure { snackBarManager.notify(R.string.error_artist_group_action_failed) }
+		}
+	}
+
+	fun deleteAlias(aliasId: Long) {
+		viewModelScope.launch {
+			runCatching { artistGroupManager.deleteAlias(aliasId) }
+				.onSuccess { loadArtistData() }
+				.onFailure { snackBarManager.notify(R.string.error_artist_group_action_failed) }
+		}
+	}
+
+	fun setPrimaryArtist(targetArtistId: String) {
 		val groupKey = (artistState.value as? UiState.Success)?.data?.group?.groupKey ?: return
 		viewModelScope.launch {
-			runCatching { artistGroupManager.setPreferredName(groupKey, name) }
+			runCatching { artistGroupManager.setPrimaryArtist(groupKey, targetArtistId) }
 				.onSuccess { loadArtistData() }
 				.onFailure { snackBarManager.notify(R.string.error_artist_group_action_failed) }
 		}

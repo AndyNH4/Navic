@@ -11,6 +11,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import paige.navic.domain.model.DomainAlbum
 import paige.navic.domain.model.DomainAlbumListType
+import paige.navic.domain.model.DomainArtistSongScope
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.model.DomainSongListType
 
@@ -34,10 +35,23 @@ fun ImmutableList<DomainSong>.sortedByListType(
 		DomainSongListType.Alphabetical -> sortedBy { it.title.lowercase() }
 		DomainSongListType.RecentlyStarred -> sortedByDescending { it.starredAt }
 
-		is DomainSongListType.ByArtist -> filter {
-			it.artistId == listType.artistId
-				|| it.artists.any { artist -> artist.id == listType.artistId }
-		}.sortedByDescending { it.playCount }
+		is DomainSongListType.ByArtist -> run {
+			val artistIds = listType.artistIds + listType.artistId
+			val ownAlbumIds = albums.filter { album ->
+				album.artistId in artistIds
+					|| (album.artistName != null && album.artistName in listType.artistNames)
+			}.mapTo(mutableSetOf()) { it.id }
+			filter { song ->
+				val isOwnSong = song.albumId in ownAlbumIds
+				val isParticipation = song.artistId in artistIds
+					|| song.artists.any { artist -> artist.id in artistIds }
+				when (listType.scope) {
+					DomainArtistSongScope.All -> isOwnSong || isParticipation
+					DomainArtistSongScope.Albums -> isOwnSong
+					DomainArtistSongScope.Participations -> isParticipation && !isOwnSong
+				}
+			}.sortedByDescending { it.playCount }
+		}
 
 		is DomainSongListType.ByGenre -> filter {
 			it.genre == listType.genre

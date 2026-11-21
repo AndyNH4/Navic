@@ -13,6 +13,7 @@ import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import paige.navic.R
 import paige.navic.domain.model.DomainAlbumListType
+import paige.navic.domain.model.DomainArtistSongScope
 import paige.navic.domain.model.DomainSongListType
 import paige.navic.domain.model.lyrics.LyricsProvider
 import kotlin.math.max
@@ -58,7 +59,13 @@ fun DomainAlbumListType.label() = when (this) {
 
 @Composable
 fun DomainSongListType.label() = when (this) {
-	is DomainSongListType.ByArtist -> stringResource(R.string.option_sort_by_genre)
+	is DomainSongListType.ByArtist -> stringResource(
+		if (scope == DomainArtistSongScope.Participations) {
+			R.string.title_appears_on
+		} else {
+			R.string.title_artists
+		}
+	)
 	is DomainSongListType.ByGenre -> stringResource(R.string.option_sort_by_genre)
 	DomainSongListType.FrequentlyPlayed -> stringResource(R.string.option_sort_frequent)
 	DomainSongListType.Newest -> stringResource(R.string.option_sort_newest)

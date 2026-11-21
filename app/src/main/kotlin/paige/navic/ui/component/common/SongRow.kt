@@ -20,7 +20,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -107,7 +106,7 @@ fun SongRow(
 			),
 		verticalAlignment = Alignment.CenterVertically,
 		content = {
-			Text(
+			MarqueeText(
 				text = buildAnnotatedString {
 					append(song.title)
 					if (song.explicitStatus == DomainExplicitStatus.Explicit) {
@@ -115,8 +114,7 @@ fun SongRow(
 						appendInlineContent("InlineExplicitIcon")
 					}
 				},
-				inlineContent = InlineExplicitIcon,
-				maxLines = 2
+				inlineContent = InlineExplicitIcon
 			)
 		},
 		supportingContent = {

@@ -16,6 +16,7 @@ import androidx.room3.Transaction
 import kotlinx.coroutines.flow.Flow
 import paige.navic.data.database.entity.ArtistEntity
 import paige.navic.util.Logger
+import kotlin.time.Instant
 
 @Dao
 interface ArtistDao {
@@ -39,6 +40,9 @@ interface ArtistDao {
 
 	@Query("SELECT EXISTS(SELECT 1 FROM ArtistEntity WHERE artistId = :artistId AND starredAt IS NOT NULL)")
 	suspend fun isArtistStarred(artistId: String): Boolean
+
+	@Query("UPDATE ArtistEntity SET starredAt = :starredAt WHERE artistId IN (:artistIds)")
+	suspend fun updateStarredStates(artistIds: List<String>, starredAt: Instant?)
 
 	@RawQuery
 	suspend fun searchArtistsFuzzy(query: RoomRawQuery): List<ArtistEntity>

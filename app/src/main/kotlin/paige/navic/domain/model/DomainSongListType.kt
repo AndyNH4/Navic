@@ -46,5 +46,17 @@ sealed class DomainSongListType {
 
 	@Serializable
 	@Immutable
-	data class ByArtist(val artistId: String) : DomainSongListType()
+	data class ByArtist(
+		val artistId: String,
+		val artistIds: Set<String> = emptySet(),
+		val artistNames: Set<String> = emptySet(),
+		val scope: DomainArtistSongScope = DomainArtistSongScope.All
+	) : DomainSongListType()
+}
+
+@Serializable
+enum class DomainArtistSongScope {
+	All,
+	Albums,
+	Participations
 }

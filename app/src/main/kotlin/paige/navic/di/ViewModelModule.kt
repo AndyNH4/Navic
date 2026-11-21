@@ -76,7 +76,6 @@ val viewModelModule = module {
 			songRepository = get(),
 			albumRepository = get(),
 			artistDao = get(),
-			albumDao = get(),
 			songDao = get(),
 			downloadManager = get(),
 			snackBarManager = get(),
@@ -129,7 +128,6 @@ val viewModelModule = module {
 			initialListType = params.getOrNull<DomainArtistListType>(),
 			initialFilters = params.getOrNull<Set<DomainFilter>>(),
 			repository = get(),
-			albumDao = get(),
 			sessionManager = get(),
 			preferenceManager = get()
 		)

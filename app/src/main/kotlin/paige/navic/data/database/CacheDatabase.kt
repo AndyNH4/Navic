@@ -13,6 +13,7 @@ import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import paige.navic.data.database.dao.AlbumDao
+import paige.navic.data.database.dao.ArtistAliasDao
 import paige.navic.data.database.dao.ArtistDao
 import paige.navic.data.database.dao.ArtistGroupDao
 import paige.navic.data.database.dao.DownloadDao
@@ -25,6 +26,7 @@ import paige.navic.data.database.dao.SongDao
 import paige.navic.data.database.dao.SonicSimilarityDao
 import paige.navic.data.database.dao.SyncActionDao
 import paige.navic.data.database.entity.AlbumEntity
+import paige.navic.data.database.entity.ArtistAliasEntity
 import paige.navic.data.database.entity.ArtistEntity
 import paige.navic.data.database.entity.ArtistGroupEntity
 import paige.navic.data.database.entity.ArtistGroupMemberEntity
@@ -40,9 +42,10 @@ import paige.navic.data.database.entity.SonicSimilarityEntity
 import paige.navic.data.database.entity.SyncActionEntity
 
 @Database(
-	version = 24,
+	version = 25,
 	entities = [
 		AlbumEntity::class,
+		ArtistAliasEntity::class,
 		ArtistEntity::class,
 		ArtistGroupEntity::class,
 		ArtistGroupMemberEntity::class,
@@ -61,6 +64,7 @@ import paige.navic.data.database.entity.SyncActionEntity
 @ColumnTypeConverters(Converters::class)
 abstract class CacheDatabase : RoomDatabase() {
 	abstract fun albumDao(): AlbumDao
+	abstract fun artistAliasDao(): ArtistAliasDao
 	abstract fun artistDao(): ArtistDao
 	abstract fun artistGroupDao(): ArtistGroupDao
 	abstract fun downloadDao(): DownloadDao

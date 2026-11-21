@@ -199,7 +199,7 @@ fun ArtistSheet(
 
 			if (onSetDisplayName != null) {
 				ListItem(
-					content = { Text(stringResource(R.string.action_set_artist_display_name)) },
+					content = { Text(stringResource(R.string.title_manage_artist_names)) },
 					leadingContent = { Icon(Icons.Outlined.Edit, null) },
 					onClick = {
 						onSetDisplayName()

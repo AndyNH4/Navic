@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -76,6 +77,7 @@ import paige.navic.di.LocalSizeClass
 import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SnackBarManager
+import paige.navic.domain.model.DomainArtistSongScope
 import paige.navic.domain.model.DomainSongListType
 import paige.navic.domain.model.settings.ArtistAlbumViewMode
 import paige.navic.domain.model.settings.BottomBarVisibilityMode
@@ -93,7 +95,7 @@ import paige.navic.ui.screen.album.component.AlbumListScreenListItem
 import paige.navic.ui.screen.artist.component.ArtistActionButtons
 import paige.navic.ui.screen.artist.component.ArtistDetailScreenHeading
 import paige.navic.ui.screen.artist.component.ArtistDetailScreenTopBar
-import paige.navic.ui.screen.artist.dialog.ArtistDisplayNameDialog
+import paige.navic.ui.screen.artist.dialog.ArtistAliasesDialog
 import paige.navic.ui.screen.artist.dialog.ArtistMergeDialog
 import paige.navic.ui.screen.artist.viewmodel.ArtistDetailViewModel
 import paige.navic.ui.screen.playlist.dialog.PlaylistUpdateDialog
@@ -179,17 +181,13 @@ fun ArtistDetailScreen(
 					starred = starred,
 					onSetStarred = { viewModel.starArtist(it) },
 					onMergeArtists = { showMergeDialog = true },
-					onSetDisplayName = if (artistState.data?.group != null) {
-						{ showDisplayNameDialog = true }
-					} else {
-						null
-					},
-					onRemoveFromGroup = if (artistState.data?.group != null) {
+					onSetDisplayName = { showDisplayNameDialog = true },
+					onRemoveFromGroup = if ((artistState.data?.groupMembers?.size ?: 0) > 1) {
 						{ viewModel.removeFromGroup() }
 					} else {
 						null
 					},
-					onDisbandGroup = if (artistState.data?.group != null) {
+					onDisbandGroup = if ((artistState.data?.groupMembers?.size ?: 0) > 1) {
 						{ viewModel.disbandGroup() }
 					} else {
 						null
@@ -265,10 +263,12 @@ fun ArtistDetailScreen(
 								innerPadding = contentPadding,
 								scrolled = scrolled
 							)
-							val otherNames = state.groupMembers
-								.filter { it.artistId != state.artist.id }
-								.map { it.name }
-								.distinct()
+							val otherNames = (
+								state.groupMembers
+									.filter { it.artistId != state.artist.id }
+									.map { it.name } + state.aliases.map { it.name }
+								).distinct()
+								.filter { it != state.artist.name }
 							if (otherNames.isNotEmpty()) {
 								Text(
 									text = stringResource(
@@ -352,7 +352,16 @@ fun ArtistDetailScreen(
 														backStack.add(
 															Screen.SongList(
 																nested = true,
-																listType = DomainSongListType.ByArtist(state.artist.id)
+																listType = DomainSongListType.ByArtist(
+																	artistId = state.artist.id,
+																	artistIds = state.groupMembers.map { it.artistId }.toSet(),
+																	artistNames = state.groupMembers.map { it.name }.toSet(),
+																	scope = if (titleRes == R.string.title_appears_on) {
+																		DomainArtistSongScope.Participations
+																	} else {
+																		DomainArtistSongScope.Albums
+																	}
+																)
 															)
 														)
 													})
@@ -370,7 +379,7 @@ fun ArtistDetailScreen(
 													val download =
 														allDownloads.find { it.songId == song.id }
 													SongRow(
-														modifier = Modifier.weight(1f),
+														modifier = Modifier.weight(1f).width(400.dp),
 														song = song,
 														selected = selection == song,
 														onClick = {
@@ -558,15 +567,19 @@ fun ArtistDetailScreen(
 		}
 
 		val currentArtistState = artistState.data
-		if (showDisplayNameDialog && currentArtistState?.group != null) {
-			ArtistDisplayNameDialog(
-				initialName = currentArtistState.group.preferredName ?: currentArtistState.artist.name,
-				candidateNames = currentArtistState.groupMembers.map { it.name },
-				onDismissRequest = { showDisplayNameDialog = false },
-				onConfirm = {
-					viewModel.setPreferredName(it)
-					showDisplayNameDialog = false
-				}
+		if (showDisplayNameDialog && currentArtistState != null) {
+			ArtistAliasesDialog(
+				initialDisplayName = currentArtistState.group?.preferredName
+					?: currentArtistState.artist.name,
+				primaryArtistId = currentArtistState.group?.primaryArtistId,
+				members = currentArtistState.groupMembers,
+				aliases = currentArtistState.aliases,
+				onSetDisplayName = viewModel::setPreferredName,
+				onAddAlias = viewModel::addAlias,
+				onUpdateAlias = viewModel::updateAlias,
+				onDeleteAlias = viewModel::deleteAlias,
+				onSetPrimaryArtist = viewModel::setPrimaryArtist,
+				onDismissRequest = { showDisplayNameDialog = false }
 			)
 		}
 

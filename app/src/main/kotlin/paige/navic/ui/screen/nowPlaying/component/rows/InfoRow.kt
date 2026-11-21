@@ -96,15 +96,6 @@ fun NowPlayingInfoRow(
 			}
 			val notPlayingString = stringResource(R.string.info_not_playing)
 			MarqueeText(
-				modifier = Modifier.clickable(
-					song != null,
-					onClick = dropUnlessResumed {
-						song?.artistId?.let { id ->
-							backStack.remove(Screen.NowPlaying)
-							backStack.add(Screen.ArtistDetail(id))
-						}
-					}
-				),
 				style = MaterialTheme.typography.bodyMedium
 					.copy(
 						color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -114,6 +105,8 @@ fun NowPlayingInfoRow(
 					if (song != null) {
 						appendArtists(
 							artists = song.artists,
+							fallbackName = song.artistName,
+							fallbackArtistId = song.artistId,
 							onClick = {
 								backStack.remove(Screen.NowPlaying)
 								backStack.add(Screen.ArtistDetail(it))

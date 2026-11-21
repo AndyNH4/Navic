@@ -47,7 +47,7 @@ interface ArtistGroupDao {
 	@Query("SELECT * FROM ArtistGroupMemberEntity WHERE artistId = :artistId LIMIT 1")
 	suspend fun getMemberByArtistId(artistId: String): ArtistGroupMemberEntity?
 
-	@Query("SELECT * FROM ArtistGroupMemberEntity WHERE groupKey = :groupKey")
+	@Query("SELECT * FROM ArtistGroupMemberEntity WHERE groupKey = :groupKey ORDER BY artistId")
 	suspend fun getMembersByGroupKey(groupKey: String): List<ArtistGroupMemberEntity>
 
 	@RawQuery

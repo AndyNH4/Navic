@@ -14,10 +14,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import paige.navic.data.database.dao.AlbumDao
-import paige.navic.data.database.mapper.toDomainModel
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.model.DomainAlbum
@@ -34,7 +31,6 @@ class ArtistListViewModel(
 	initialListType: DomainArtistListType? = null,
 	initialFilters: Set<DomainFilter>? = null,
 	private val repository: ArtistRepository,
-	private val albumDao: AlbumDao,
 	private val sessionManager: SessionManager,
 	private val preferenceManager: PreferenceManager
 ) : ViewModel() {
@@ -78,15 +74,14 @@ class ArtistListViewModel(
 	fun selectArtist(artist: DomainArtist) {
 		viewModelScope.launch {
 			selectedArtist.value = artist
-			val artistAlbums =
-				albumDao.getAlbumsByArtist(artist.id).firstOrNull() ?: emptyList()
-			selectedArtistAlbums.value = artistAlbums.map { it.toDomainModel() }.toImmutableList()
+			selectedArtistAlbums.value = repository.getArtistAlbums(artist).toImmutableList()
 			starred.value = repository.isArtistStarred(artist)
 		}
 	}
 
 	fun clearSelection() {
 		selectedArtist.value = null
+		selectedArtistAlbums.value = null
 	}
 
 	fun starArtist(isStarred: Boolean) {
@@ -106,9 +101,7 @@ class ArtistListViewModel(
 	fun addArtistAlbumsToQueue(player: MediaPlayerViewModel) {
 		val artist = selectedArtist.value ?: return
 		viewModelScope.launch {
-			val artistAlbums =
-				albumDao.getAlbumsByArtist(artist.id).firstOrNull() ?: emptyList()
-			artistAlbums.map { it.toDomainModel() }.forEach { album ->
+			repository.getArtistAlbums(artist).forEach { album ->
 				player.addToQueue(album)
 			}
 		}
@@ -117,9 +110,7 @@ class ArtistListViewModel(
 	fun playArtistAlbumsNext(player: MediaPlayerViewModel) {
 		val artist = selectedArtist.value ?: return
 		viewModelScope.launch {
-			val artistAlbums =
-				albumDao.getAlbumsByArtist(artist.id).firstOrNull() ?: emptyList()
-			artistAlbums.map { it.toDomainModel() }.forEach { album ->
+			repository.getArtistAlbums(artist).forEach { album ->
 				player.playNext(album)
 			}
 		}

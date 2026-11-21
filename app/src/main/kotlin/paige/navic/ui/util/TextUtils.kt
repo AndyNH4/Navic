@@ -67,25 +67,47 @@ val InlineExplicitIconLarge = persistentMapOf(
 fun AnnotatedString.Builder.appendBulletPoint()
 	= append(" • ")
 
+fun DomainSong.displayArtistName(): String? {
+	val structuredName = artists
+		.map { it.name.trim() }
+		.filter { it.isNotEmpty() }
+		.joinToString(", ")
+	return structuredName
+		.ifBlank { artistName?.trim().orEmpty() }
+		.takeIf { it.isNotEmpty() }
+}
+
 fun AnnotatedString.Builder.appendArtists(
 	artists: List<DomainSongArtist>,
+	fallbackName: String? = null,
+	fallbackArtistId: String? = null,
 	onClick: (artistId: String) -> Unit
 ) {
 	val listener = LinkInteractionListener { annotation ->
 		val artistId = (annotation as LinkAnnotation.Clickable).tag
 		onClick(artistId)
 	}
-	artists.forEachIndexed { index, artist ->
-		withLink(
-			link = LinkAnnotation.Clickable(
-				linkInteractionListener = listener,
-				tag = artist.id,
-				styles = TextLinkStyles()
-			)
-		) {
+	val displayArtists = artists.filter { it.name.isNotBlank() }.ifEmpty {
+		fallbackName?.trim()?.takeIf { it.isNotEmpty() }?.let { name ->
+			listOf(DomainSongArtist(id = fallbackArtistId.orEmpty(), name = name))
+		}.orEmpty()
+	}
+	displayArtists.forEachIndexed { index, artist ->
+		val artistId = artist.id.trim()
+		if (artistId.isNotEmpty() && artistId != "unknown artist") {
+			withLink(
+				link = LinkAnnotation.Clickable(
+					linkInteractionListener = listener,
+					tag = artistId,
+					styles = TextLinkStyles()
+				)
+			) {
+				append(artist.name)
+			}
+		} else {
 			append(artist.name)
 		}
-		if (index != artists.lastIndex) {
+		if (index != displayArtists.lastIndex) {
 			append(", ")
 		}
 	}
@@ -140,6 +162,8 @@ fun buildSongInfoString(
 
 		appendArtists(
 			artists = song.artists,
+			fallbackName = song.artistName,
+			fallbackArtistId = song.artistId,
 			onClick = onClickArtist
 		)
 

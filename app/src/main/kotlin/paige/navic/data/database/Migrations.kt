@@ -54,3 +54,25 @@ val MIGRATION_23_24 = object : Migration(23, 24) {
 		)
 	}
 }
+
+
+val MIGRATION_24_25 = object : Migration(24, 25) {
+	override suspend fun migrate(connection: SQLiteConnection) {
+		connection.execSQL(
+			"CREATE TABLE IF NOT EXISTS `ArtistAliasEntity` (" +
+				"`aliasId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+				"`groupKey` TEXT NOT NULL, " +
+				"`name` TEXT NOT NULL, " +
+				"`languageTag` TEXT NOT NULL)"
+		)
+		connection.execSQL(
+			"CREATE INDEX IF NOT EXISTS `index_ArtistAliasEntity_groupKey` ON `ArtistAliasEntity` (`groupKey`)"
+		)
+		connection.execSQL(
+			"CREATE INDEX IF NOT EXISTS `index_ArtistAliasEntity_name` ON `ArtistAliasEntity` (`name`)"
+		)
+		connection.execSQL(
+			"CREATE UNIQUE INDEX IF NOT EXISTS `index_ArtistAliasEntity_groupKey_name_languageTag` ON `ArtistAliasEntity` (`groupKey`, `name`, `languageTag`)"
+		)
+	}
+}

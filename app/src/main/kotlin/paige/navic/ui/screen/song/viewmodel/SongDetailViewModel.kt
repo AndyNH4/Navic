@@ -18,6 +18,7 @@ import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.model.DomainSong
 import paige.navic.domain.repository.CollectionRepository
 import paige.navic.ui.core.UiState
+import paige.navic.ui.util.displayArtistName
 import paige.navic.util.effectiveGain
 import paige.navic.util.toFileSize
 import paige.navic.util.toHoursMinutesSeconds
@@ -48,7 +49,7 @@ class SongDetailViewModel(
 	fun getInfo(song: DomainSong): PersistentList<Pair<Int, String?>> =
 		persistentListOf(
 			R.string.info_track_name to song.title,
-			R.string.info_track_artist to song.artistName,
+			R.string.info_track_artist to song.displayArtistName(),
 			R.string.info_track_album to song.albumTitle,
 
 			R.string.info_track_number to song.trackNumber.toString(),

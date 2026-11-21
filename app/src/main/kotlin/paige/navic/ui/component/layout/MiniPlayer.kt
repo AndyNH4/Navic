@@ -81,6 +81,7 @@ import paige.navic.ui.component.common.MarqueeText
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screen.settings.viewmodel.NavtabsViewModel
+import paige.navic.ui.util.displayArtistName
 import paige.navic.ui.util.playPauseIconPainter
 import coil3.compose.LocalPlatformContext as LocalCoilPlatformContext
 
@@ -312,7 +313,7 @@ fun MiniPlayer(
 					},
 					supportingContent = {
 						if (song != null) {
-							MarqueeText(song.artistName ?: "[unknown artist]")
+							MarqueeText(song.displayArtistName() ?: "[unknown artist]")
 						} else {
 							MarqueeText(stringResource(R.string.info_not_playing))
 						}
